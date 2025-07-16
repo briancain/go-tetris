@@ -96,57 +96,59 @@ jobs:
           version: latest
           args: --timeout=5m
 
-  cross-platform:
-    name: Cross-Platform Build
-    runs-on: ubuntu-latest
-    # This job builds the game for different platforms using pure Go mode (CGO_ENABLED=0)
-    # and the headless tag to avoid dependencies on platform-specific graphics libraries
-    strategy:
-      matrix:
-        goos: [windows, darwin]
-        goarch: [amd64]
-        include:
-          - goos: darwin
-            goarch: arm64
-    steps:
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-        check-latest: true
-
-    - name: Check out code
-      uses: actions/checkout@v3
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        # Install basic dependencies
-        sudo apt-get install -y libgl1-mesa-dev xorg-dev
-
-    - name: Go Cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-
-    - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
-      env:
-        GOOS: ${{ matrix.goos }}
-        GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: 0  # Use pure Go mode for cross-compilation
-      run: |
-        mkdir -p bin
-        output_name="bin/tetris"
-        if [ "${{ matrix.goos }}" = "windows" ]; then
-          output_name="bin/tetris.exe"
-        fi
-        # Build with special tags to avoid GLFW/OpenGL dependencies:
-        # - headless: Our custom implementation for CI builds
-        # - ebitennogl: Disables OpenGL dependencies in Ebiten
-        # - ebitennonscreen: Disables screen-related functionality in Ebiten
-        go build -v -tags=headless,ebitennogl,ebitennonscreen -o $output_name ./cmd
+  # cross-platform job has been disabled
+  # Uncomment the following section to re-enable cross-platform builds
+  #cross-platform:
+  #  name: Cross-Platform Build
+  #  runs-on: ubuntu-latest
+  #  # This job builds the game for different platforms using pure Go mode (CGO_ENABLED=0)
+  #  # and the headless tag to avoid dependencies on platform-specific graphics libraries
+  #  strategy:
+  #    matrix:
+  #      goos: [windows, darwin]
+  #      goarch: [amd64]
+  #      include:
+  #        - goos: darwin
+  #          goarch: arm64
+  #  steps:
+  #  - name: Set up Go
+  #    uses: actions/setup-go@v4
+  #    with:
+  #      go-version: '1.21'
+  #      check-latest: true
+  #
+  #  - name: Check out code
+  #    uses: actions/checkout@v3
+  #
+  #  - name: Install dependencies
+  #    run: |
+  #      sudo apt-get update
+  #      # Install basic dependencies
+  #      sudo apt-get install -y libgl1-mesa-dev xorg-dev
+  #
+  #  - name: Go Cache
+  #    uses: actions/cache@v3
+  #    with:
+  #      path: |
+  #        ~/.cache/go-build
+  #        ~/go/pkg/mod
+  #      key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+  #      restore-keys: |
+  #        ${{ runner.os }}-go-
+  #
+  #  - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
+  #    env:
+  #      GOOS: ${{ matrix.goos }}
+  #      GOARCH: ${{ matrix.goarch }}
+  #      CGO_ENABLED: 0  # Use pure Go mode for cross-compilation
+  #    run: |
+  #      mkdir -p bin
+  #      output_name="bin/tetris"
+  #      if [ "${{ matrix.goos }}" = "windows" ]; then
+  #        output_name="bin/tetris.exe"
+  #      fi
+  #      # Build with special tags to avoid GLFW/OpenGL dependencies:
+  #      # - headless: Our custom implementation for CI builds
+  #      # - ebitennogl: Disables OpenGL dependencies in Ebiten
+  #      # - ebitennonscreen: Disables screen-related functionality in Ebiten
+  #      go build -v -tags=headless,ebitennogl,ebitennonscreen -o $output_name ./cmd
