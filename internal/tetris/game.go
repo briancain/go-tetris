@@ -17,8 +17,8 @@ type Game struct {
 	Board         *Board
 	CurrentPiece  *Piece
 	NextPiece     *Piece
-	HeldPiece     *Piece    // Piece that is being held
-	HasSwapped    bool      // Flag to prevent multiple swaps per turn
+	HeldPiece     *Piece // Piece that is being held
+	HasSwapped    bool   // Flag to prevent multiple swaps per turn
 	State         int
 	Score         int
 	Level         int
@@ -28,7 +28,7 @@ type Game struct {
 	LastMoveDown  time.Time
 	LastMoveSide  time.Time
 	LastRotate    time.Time
-	LastHold      time.Time  // Time of last hold action
+	LastHold      time.Time // Time of last hold action
 	InputDelay    time.Duration
 	FastDropDelay time.Duration
 }
@@ -45,10 +45,10 @@ func NewGame() *Game {
 		InputDelay:    100 * time.Millisecond, // Delay between input actions
 		FastDropDelay: 50 * time.Millisecond,  // Fast drop speed
 	}
-	
+
 	// Initialize pieces
 	game.NextPiece = RandomPiece()
-	
+
 	return game
 }
 
@@ -104,7 +104,7 @@ func (g *Game) moveDown() {
 	// Check for game over
 	g.CurrentPiece = g.NextPiece
 	g.NextPiece = RandomPiece()
-	
+
 	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
 		g.State = StateGameOver
 	}
@@ -115,16 +115,16 @@ func (g *Game) MoveLeft() bool {
 	if g.State != StatePlaying || time.Since(g.LastMoveSide) < g.InputDelay {
 		return false
 	}
-	
+
 	g.LastMoveSide = time.Now()
 	testPiece := g.CurrentPiece.Copy()
 	testPiece.Move(-1, 0)
-	
+
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		g.CurrentPiece.Move(-1, 0)
 		return true
 	}
-	
+
 	return false
 }
 
@@ -133,16 +133,16 @@ func (g *Game) MoveRight() bool {
 	if g.State != StatePlaying || time.Since(g.LastMoveSide) < g.InputDelay {
 		return false
 	}
-	
+
 	g.LastMoveSide = time.Now()
 	testPiece := g.CurrentPiece.Copy()
 	testPiece.Move(1, 0)
-	
+
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		g.CurrentPiece.Move(1, 0)
 		return true
 	}
-	
+
 	return false
 }
 
@@ -151,16 +151,16 @@ func (g *Game) RotatePiece() bool {
 	if g.State != StatePlaying || time.Since(g.LastRotate) < g.InputDelay {
 		return false
 	}
-	
+
 	g.LastRotate = time.Now()
 	testPiece := g.CurrentPiece.Copy()
 	testPiece.Rotate()
-	
+
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		g.CurrentPiece.Rotate()
 		return true
 	}
-	
+
 	// Wall kick - try to adjust position if rotation fails
 	// Try moving left
 	testPiece.Move(-1, 0)
@@ -169,7 +169,7 @@ func (g *Game) RotatePiece() bool {
 		g.CurrentPiece.Move(-1, 0)
 		return true
 	}
-	
+
 	// Try moving right
 	testPiece.Move(2, 0) // Move 2 to the right from the left position
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
@@ -177,7 +177,7 @@ func (g *Game) RotatePiece() bool {
 		g.CurrentPiece.Move(1, 0)
 		return true
 	}
-	
+
 	return false
 }
 
@@ -186,32 +186,32 @@ func (g *Game) HardDrop() {
 	if g.State != StatePlaying {
 		return
 	}
-	
+
 	// Keep moving down until we hit something
 	for {
 		testPiece := g.CurrentPiece.Copy()
 		testPiece.Move(0, 1)
-		
+
 		if !g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 			break
 		}
-		
+
 		g.CurrentPiece.Move(0, 1)
-		g.Score += 1 // Small bonus for hard drop
+		g.Score++ // Small bonus for hard drop
 	}
-	
+
 	g.lockPiece()
-	
+
 	// Check for completed lines
 	linesCleared := g.Board.ClearLines()
 	if linesCleared > 0 {
 		g.addScore(linesCleared)
 	}
-	
+
 	// Check for game over
 	g.CurrentPiece = g.NextPiece
 	g.NextPiece = RandomPiece()
-	
+
 	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
 		g.State = StateGameOver
 	}
@@ -222,17 +222,17 @@ func (g *Game) SoftDrop() bool {
 	if g.State != StatePlaying || time.Since(g.LastMoveDown) < g.FastDropDelay {
 		return false
 	}
-	
+
 	g.LastMoveDown = time.Now()
 	testPiece := g.CurrentPiece.Copy()
 	testPiece.Move(0, 1)
-	
+
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		g.CurrentPiece.Move(0, 1)
-		g.Score += 1 // Small bonus for soft drop
+		g.Score++ // Small bonus for soft drop
 		return true
 	}
-	
+
 	return false
 }
 
@@ -257,9 +257,9 @@ func (g *Game) addScore(linesCleared int) {
 	// Classic Tetris scoring
 	linePoints := []int{0, 40, 100, 300, 1200}
 	g.Score += linePoints[linesCleared] * g.Level
-	
+
 	g.LinesCleared += linesCleared
-	
+
 	// Level up every 10 lines
 	newLevel := (g.LinesCleared / 10) + 1
 	if newLevel > g.Level {
@@ -274,7 +274,7 @@ func (g *Game) updateDropInterval() {
 	// This makes the game get progressively faster with each level
 	baseInterval := 800.0
 	factor := 0.8
-	
+
 	// Calculate the new interval
 	interval := baseInterval * pow(factor, float64(g.Level-1))
 	g.DropInterval = time.Duration(interval) * time.Millisecond
@@ -288,47 +288,48 @@ func pow(x, y float64) float64 {
 	}
 	return result
 }
+
 // HoldPiece swaps the current piece with the held piece
 func (g *Game) HoldPiece() bool {
 	if g.State != StatePlaying || time.Since(g.LastHold) < g.InputDelay {
 		return false
 	}
-	
+
 	// Can only swap once per piece
 	if g.HasSwapped {
 		return false
 	}
-	
+
 	g.LastHold = time.Now()
-	
+
 	// If there's no held piece yet, store current piece and get next piece
 	if g.HeldPiece == nil {
 		g.HeldPiece = g.CurrentPiece.Copy()
 		// Reset the held piece to its original position and orientation
 		g.HeldPiece = NewPiece(g.HeldPiece.Type)
-		
+
 		g.CurrentPiece = g.NextPiece
 		g.NextPiece = RandomPiece()
 	} else {
 		// Swap current piece with held piece
 		tempPiece := g.CurrentPiece
-		
+
 		// Create a new piece of the held type at the top of the board
 		g.CurrentPiece = NewPiece(g.HeldPiece.Type)
-		
+
 		// Store the previous current piece as held
 		g.HeldPiece = NewPiece(tempPiece.Type)
 	}
-	
+
 	// Mark that we've swapped this turn
 	g.HasSwapped = true
-	
+
 	// Check if the new current piece can be placed
 	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
 		// Game over if the piece can't be placed
 		g.State = StateGameOver
 		return false
 	}
-	
+
 	return true
 }

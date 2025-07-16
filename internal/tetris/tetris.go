@@ -48,6 +48,7 @@ func (g *Game) IsPlaying() bool {
 func (g *Game) IsInMenu() bool {
 	return g.State == StateMenu
 }
+
 // GetHeldPiece returns a copy of the held piece for display
 func (g *Game) GetHeldPiece() *Piece {
 	if g.HeldPiece == nil {

@@ -16,44 +16,44 @@ const (
 	// Screen dimensions
 	ScreenWidth  = 640
 	ScreenHeight = 480
-	
+
 	// Cell size in pixels
 	CellSize = 20
-	
+
 	// Board position on screen
 	BoardX = 220
 	BoardY = 40
-	
+
 	// Preview position on screen
 	PreviewX = 480
 	PreviewY = 80
-	
+
 	// Hold piece position on screen
 	HoldX = 100
 	HoldY = 80
-	
+
 	// UI colors
 	BackgroundColor = 0x1A1A1AFF
 )
 
 // Tetris piece colors
 var pieceColors = []color.RGBA{
-	{0, 0, 0, 0},                 // Empty
-	{0, 255, 255, 255},           // I - Cyan
-	{0, 0, 255, 255},             // J - Blue
-	{255, 165, 0, 255},           // L - Orange
-	{255, 255, 0, 255},           // O - Yellow
-	{0, 255, 0, 255},             // S - Green
-	{128, 0, 128, 255},           // T - Purple
-	{255, 0, 0, 255},             // Z - Red
-	{128, 128, 128, 255},         // Locked - Gray
+	{0, 0, 0, 0},         // Empty
+	{0, 255, 255, 255},   // I - Cyan
+	{0, 0, 255, 255},     // J - Blue
+	{255, 165, 0, 255},   // L - Orange
+	{255, 255, 0, 255},   // O - Yellow
+	{0, 255, 0, 255},     // S - Green
+	{128, 0, 128, 255},   // T - Purple
+	{255, 0, 0, 255},     // Z - Red
+	{128, 128, 128, 255}, // Locked - Gray
 }
 
 // Renderer handles the game's rendering
 type Renderer struct {
-	game      *tetris.Game
-	boardImg  *ebiten.Image
-	font      font.Face
+	game     *tetris.Game
+	boardImg *ebiten.Image
+	font     font.Face
 }
 
 // NewRenderer creates a new renderer for the game
@@ -125,7 +125,7 @@ func (r *Renderer) drawMenu(screen *ebiten.Image) {
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 20
 	text.Draw(screen, msg, r.font, x, y, color.White)
-	
+
 	msg = "Shift: Hold Piece"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 20
@@ -161,7 +161,7 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 	if r.game.CurrentPiece != nil && r.game.State == tetris.StatePlaying {
 		piece := r.game.CurrentPiece
 		pieceColor := pieceColors[piece.Type]
-		
+
 		for i := 0; i < len(piece.Shape); i++ {
 			for j := 0; j < len(piece.Shape[i]); j++ {
 				if piece.Shape[i][j] {
@@ -171,21 +171,21 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 				}
 			}
 		}
-		
+
 		// Draw ghost piece (preview of where the piece will land)
 		ghostY := piece.Y
 		for {
 			testY := ghostY + 1
 			testPiece := piece.Copy()
 			testPiece.Y = testY
-			
+
 			if !r.game.Board.IsValidPosition(testPiece, testPiece.X, testY) {
 				break
 			}
-			
+
 			ghostY = testY
 		}
-		
+
 		// Only draw ghost if it's different from the current position
 		if ghostY > piece.Y {
 			ghostColor := color.RGBA{pieceColor.R, pieceColor.G, pieceColor.B, 100}
@@ -203,7 +203,7 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 
 	// Draw the next piece preview
 	r.drawNextPiecePreview(screen)
-	
+
 	// Draw the held piece
 	r.drawHeldPiece(screen)
 
@@ -221,7 +221,7 @@ func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
 		float64(CellSize),
 		clr,
 	)
-	
+
 	// Draw cell border
 	borderColor := color.RGBA{0, 0, 0, 255}
 	ebitenutil.DrawRect(
@@ -268,7 +268,7 @@ func (r *Renderer) drawEmptyCell(screen *ebiten.Image, x, y int) {
 		float64(CellSize),
 		color.RGBA{40, 40, 40, 255},
 	)
-	
+
 	// Draw cell border
 	borderColor := color.RGBA{20, 20, 20, 255}
 	ebitenutil.DrawRect(
@@ -316,7 +316,7 @@ func (r *Renderer) drawNextPiecePreview(screen *ebiten.Image) {
 		104,
 		color.RGBA{100, 100, 100, 255},
 	)
-	
+
 	ebitenutil.DrawRect(
 		screen,
 		float64(PreviewX-10),
@@ -325,17 +325,17 @@ func (r *Renderer) drawNextPiecePreview(screen *ebiten.Image) {
 		100,
 		color.RGBA{60, 60, 60, 255},
 	)
-	
+
 	text.Draw(screen, "Next Piece:", r.font, PreviewX-5, PreviewY-15, color.White)
-	
+
 	if r.game.NextPiece != nil {
 		piece := r.game.NextPiece
 		pieceColor := pieceColors[piece.Type]
-		
+
 		// Center the piece in the preview box
 		offsetX := (4 - len(piece.Shape[0])) / 2 * CellSize
 		offsetY := (4 - len(piece.Shape)) / 2 * CellSize
-		
+
 		for i := 0; i < len(piece.Shape); i++ {
 			for j := 0; j < len(piece.Shape[i]); j++ {
 				if piece.Shape[i][j] {
@@ -359,7 +359,7 @@ func (r *Renderer) drawHeldPiece(screen *ebiten.Image) {
 		104,
 		color.RGBA{100, 100, 100, 255},
 	)
-	
+
 	ebitenutil.DrawRect(
 		screen,
 		float64(HoldX-10),
@@ -368,17 +368,17 @@ func (r *Renderer) drawHeldPiece(screen *ebiten.Image) {
 		100,
 		color.RGBA{60, 60, 60, 255},
 	)
-	
+
 	text.Draw(screen, "Hold Piece:", r.font, HoldX-5, HoldY-15, color.White)
-	
+
 	heldPiece := r.game.GetHeldPiece()
 	if heldPiece != nil {
 		pieceColor := pieceColors[heldPiece.Type]
-		
+
 		// Center the piece in the hold box
 		offsetX := (4 - len(heldPiece.Shape[0])) / 2 * CellSize
 		offsetY := (4 - len(heldPiece.Shape)) / 2 * CellSize
-		
+
 		for i := 0; i < len(heldPiece.Shape); i++ {
 			for j := 0; j < len(heldPiece.Shape[i]); j++ {
 				if heldPiece.Shape[i][j] {
@@ -405,7 +405,7 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 		124,
 		color.RGBA{100, 100, 100, 255},
 	)
-	
+
 	ebitenutil.DrawRect(
 		screen,
 		float64(PreviewX-10),
@@ -414,15 +414,15 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 		120,
 		color.RGBA{60, 60, 60, 255},
 	)
-	
+
 	// Draw score
 	text.Draw(screen, "Score:", r.font, PreviewX-5, PreviewY+100, color.White)
 	text.Draw(screen, fmt.Sprintf("%d", r.game.GetScore()), r.font, PreviewX+5, PreviewY+120, color.White)
-	
+
 	// Draw level
 	text.Draw(screen, "Level:", r.font, PreviewX-5, PreviewY+140, color.White)
 	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLevel()), r.font, PreviewX+5, PreviewY+160, color.White)
-	
+
 	// Draw lines cleared
 	text.Draw(screen, "Lines:", r.font, PreviewX-5, PreviewY+180, color.White)
 	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, PreviewY+200, color.White)
@@ -439,13 +439,13 @@ func (r *Renderer) drawPauseOverlay(screen *ebiten.Image) {
 		float64(ScreenHeight),
 		color.RGBA{0, 0, 0, 128},
 	)
-	
+
 	// Pause text
 	msg := "PAUSED"
 	x := (ScreenWidth - len(msg)*7) / 2
 	y := ScreenHeight/2 - 10
 	text.Draw(screen, msg, r.font, x, y, color.White)
-	
+
 	msg = "Press ESC to resume"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 30
@@ -463,19 +463,19 @@ func (r *Renderer) drawGameOverOverlay(screen *ebiten.Image) {
 		float64(ScreenHeight),
 		color.RGBA{0, 0, 0, 192},
 	)
-	
+
 	// Game over text
 	msg := "GAME OVER"
 	x := (ScreenWidth - len(msg)*7) / 2
 	y := ScreenHeight/2 - 30
 	text.Draw(screen, msg, r.font, x, y, color.White)
-	
+
 	// Final score
 	msg = fmt.Sprintf("Final Score: %d", r.game.GetScore())
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 30
 	text.Draw(screen, msg, r.font, x, y, color.White)
-	
+
 	// Restart instructions
 	msg = "Press ENTER to play again"
 	x = (ScreenWidth - len(msg)*7) / 2

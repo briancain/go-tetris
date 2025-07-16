@@ -66,7 +66,7 @@ func (b *Board) IsValidPosition(piece *Piece, x, y int) bool {
 }
 
 // PlacePiece places a piece on the board
-func (b *Board) PlacePiece(piece *Piece, x, y int, lock bool) {
+func (b *Board) PlacePiece(piece *Piece, x, y int, _ bool) {
 	// Always use the piece's original color type
 	cellType := Cell(piece.Type)
 

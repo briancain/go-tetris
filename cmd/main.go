@@ -16,19 +16,19 @@ func main() {
 
 	// Create the game
 	game := tetris.NewGame()
-	
+
 	// Create the renderer
 	renderer := ui.NewRenderer(game)
-	
+
 	// Create the game application
-	tetrisGame := tetris.NewTetrisGame(game, renderer)
-	
+	app := tetris.NewApp(game, renderer)
+
 	// Set up the window
 	ebiten.SetWindowSize(ui.ScreenWidth, ui.ScreenHeight)
 	ebiten.SetWindowTitle("Go Tetris")
-	
+
 	// Run the game
-	if err := ebiten.RunGame(tetrisGame); err != nil {
+	if err := ebiten.RunGame(app); err != nil {
 		log.Fatal(err)
 	}
 }
