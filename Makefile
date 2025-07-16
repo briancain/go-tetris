@@ -113,17 +113,20 @@ all: build
 # Build for Windows
 build-windows:
 	mkdir -p $(BIN_DIR)
-	GOOS=windows GOARCH=amd64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME).exe ./cmd
+	# Use pure Go mode for cross-compilation
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME).exe ./cmd
 
 # Build for macOS (amd64)
 build-macos:
 	mkdir -p $(BIN_DIR)
-	GOOS=darwin GOARCH=amd64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME)_darwin_amd64 ./cmd
+	# Use pure Go mode for cross-compilation
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME)_darwin_amd64 ./cmd
 
 # Build for macOS (arm64)
 build-macos-arm64:
 	mkdir -p $(BIN_DIR)
-	GOOS=darwin GOARCH=arm64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME)_darwin_arm64 ./cmd
+	# Use pure Go mode for cross-compilation
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME)_darwin_arm64 ./cmd
 
 # Build for all platforms
 build-all: build build-windows build-macos build-macos-arm64

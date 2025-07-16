@@ -9,20 +9,22 @@ import (
 	"time"
 
 	"github.com/briancain/go-tetris/internal/tetris"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func main() {
 	// Seed the random number generator
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	// For CI builds, we use a headless game implementation
+	// For CI builds, we use a headless implementation
 	// that doesn't require a display
 	headlessGame := &tetris.HeadlessGame{}
+	headlessDriver := &tetris.HeadlessDriver{}
 
+	// In headless mode, we don't actually run the game
 	// This is just to make the build succeed in CI
-	// The actual game won't run in headless mode
-	if err := ebiten.RunGame(headlessGame); err != nil {
+	if err := headlessDriver.Run(headlessGame); err != nil {
 		log.Fatal(err)
 	}
+	
+	log.Println("Headless build completed successfully")
 }

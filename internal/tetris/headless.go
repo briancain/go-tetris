@@ -25,8 +25,8 @@ func (g *HeadlessGame) Layout(outsideWidth, outsideHeight int) (screenWidth, scr
 	return 640, 480
 }
 
-// InitHeadlessMode can be called in main when the ebitenginedummy tag is set
+// InitHeadlessMode can be called in main when the headless tag is set
 func InitHeadlessMode() {
-	// This function would be called in your main.go when the ebitenginedummy tag is set
+	// This function would be called in your main.go when the headless tag is set
 	// It allows the binary to be built without requiring a display
 }
