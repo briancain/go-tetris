@@ -1,4 +1,4 @@
-.PHONY: build clean run test test-verbose test-coverage mod-tidy mod-tidy-check lint fmt fmt-check help
+.PHONY: build clean run test test-verbose test-coverage mod-tidy mod-tidy-check lint fmt fmt-check help build-windows build-macos build-macos-arm64 build-all
 
 # Binary name
 BINARY_NAME=tetris
@@ -107,3 +107,24 @@ verify: fmt-check mod-tidy-check lint test
 
 # Default target
 all: build
+
+# Cross-platform build targets
+.PHONY: build-windows build-macos build-macos-arm64 build-all
+# Build for Windows
+build-windows:
+	mkdir -p $(BIN_DIR)
+	GOOS=windows GOARCH=amd64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME).exe ./cmd
+
+# Build for macOS (amd64)
+build-macos:
+	mkdir -p $(BIN_DIR)
+	GOOS=darwin GOARCH=amd64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME)_darwin_amd64 ./cmd
+
+# Build for macOS (arm64)
+build-macos-arm64:
+	mkdir -p $(BIN_DIR)
+	GOOS=darwin GOARCH=arm64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME)_darwin_arm64 ./cmd
+
+# Build for all platforms
+build-all: build build-windows build-macos build-macos-arm64
+	@echo "All builds completed successfully!"

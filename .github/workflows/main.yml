@@ -119,8 +119,12 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        # Install required libraries for Ebiten
-        sudo apt-get install -y libgl1-mesa-dev xorg-dev
+        # Install required libraries for Ebiten and cross-compilation
+        sudo apt-get install -y libgl1-mesa-dev xorg-dev gcc-mingw-w64 libc6-dev-i386
+        # For macOS cross-compilation
+        if [ "${{ matrix.goos }}" = "darwin" ]; then
+          sudo apt-get install -y gcc-multilib
+        fi
 
     - name: Go Cache
       uses: actions/cache@v3
@@ -136,11 +140,11 @@ jobs:
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: 0
+        CGO_ENABLED: 1
       run: |
         mkdir -p bin
         output_name="bin/tetris"
         if [ "${{ matrix.goos }}" = "windows" ]; then
           output_name="bin/tetris.exe"
         fi
-        go build -v -o $output_name ./cmd
+        go build -v -tags=headless -o $output_name ./cmd
