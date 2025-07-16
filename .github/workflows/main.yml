@@ -48,7 +48,9 @@ jobs:
       run: go build -v -o bin/tetris ./cmd
 
     - name: Test
-      run: go test -v ./...
+      env:
+        EBITEN_HEADLESS: "1"
+      run: go test -v -short ./...
 
     - name: Check formatting
       run: |

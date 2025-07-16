@@ -1,4 +1,4 @@
-.PHONY: build clean run test test-verbose test-coverage mod-tidy mod-tidy-check lint fmt fmt-check
+.PHONY: build clean run test test-verbose test-coverage mod-tidy mod-tidy-check lint fmt fmt-check help
 
 # Binary name
 BINARY_NAME=tetris
@@ -6,6 +6,30 @@ BINARY_NAME=tetris
 BIN_DIR=bin
 # Coverage output directory
 COVERAGE_DIR=coverage
+
+# COLORS
+GREEN  := $(shell tput -Txterm setaf 2)
+YELLOW := $(shell tput -Txterm setaf 3)
+WHITE  := $(shell tput -Txterm setaf 7)
+RESET  := $(shell tput -Txterm sgr0)
+
+# Help target
+help:
+	@echo ''
+	@echo 'Usage:'
+	@echo '  ${YELLOW}make${RESET} ${GREEN}<target>${RESET}'
+	@echo ''
+	@echo 'Targets:'
+	@awk '/^[a-zA-Z\-\_0-9]+:/ { \
+		helpMessage = match(lastLine, /^# (.*)/); \
+		if (helpMessage) { \
+			helpCommand = substr($$1, 0, index($$1, ":")-1); \
+			helpMessage = substr(lastLine, RSTART + 2, RLENGTH); \
+			printf "  ${YELLOW}%-20s${RESET} ${GREEN}%s${RESET}\n", helpCommand, helpMessage; \
+		} \
+	} \
+	{ lastLine = $$0 }' $(MAKEFILE_LIST)
+	@echo ''
 
 # Build the application
 build:
@@ -21,13 +45,21 @@ clean:
 run: build
 	./$(BIN_DIR)/$(BINARY_NAME)
 
-# Run tests
+# Run all tests
 test:
 	go test ./...
 
 # Run tests with verbose output
 test-verbose:
 	go test -v ./...
+
+# Run tests in short mode (skips tests that require a display)
+test-short:
+	go test -short ./...
+
+# Run tests in short mode with verbose output
+test-short-verbose:
+	go test -v -short ./...
 
 # Run tests with coverage report
 test-coverage:
