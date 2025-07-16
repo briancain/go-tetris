@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"image/color"
 
-	"github.com/briancain/go-tetris/internal/tetris"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/text"
+	"github.com/hajimehoshi/ebiten/v2/text" // nolint:staticcheck // Using deprecated API for compatibility
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
+
+	"github.com/briancain/go-tetris/internal/tetris"
 )
 
 const (
@@ -94,54 +95,55 @@ func (r *Renderer) drawMenu(screen *ebiten.Image) {
 	msg := "TETRIS"
 	x := (ScreenWidth - len(msg)*7) / 2
 	y := ScreenHeight/3 - 20
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Press ENTER to start"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y = ScreenHeight/2 + 20
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Controls:"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 40
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Arrow Keys: Move"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 20
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Up: Rotate"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 20
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Space: Hard Drop"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 20
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "ESC: Pause"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 20
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Shift: Hold Piece"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 20
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 }
 
 // drawGame draws the main game screen
 func (r *Renderer) drawGame(screen *ebiten.Image) {
 	// Draw the board frame
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(BoardX-2),
-		float64(BoardY-2),
-		float64(tetris.BoardWidth*CellSize+4),
-		float64(tetris.BoardHeight*CellSize+4),
+		float32(BoardX-2),
+		float32(BoardY-2),
+		float32(tetris.BoardWidth*CellSize+4),
+		float32(tetris.BoardHeight*CellSize+4),
 		color.White,
+		false,
 	)
 
 	// Draw the board cells
@@ -213,120 +215,132 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 
 // drawCell draws a colored cell
 func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x),
-		float64(y),
-		float64(CellSize),
-		float64(CellSize),
+		float32(x),
+		float32(y),
+		float32(CellSize),
+		float32(CellSize),
 		clr,
+		false,
 	)
 
 	// Draw cell border
 	borderColor := color.RGBA{0, 0, 0, 255}
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x),
-		float64(y),
-		float64(CellSize),
+		float32(x),
+		float32(y),
+		float32(CellSize),
 		1,
 		borderColor,
+		false,
 	)
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x),
-		float64(y),
+		float32(x),
+		float32(y),
 		1,
-		float64(CellSize),
+		float32(CellSize),
 		borderColor,
+		false,
 	)
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x+CellSize-1),
-		float64(y),
+		float32(x+CellSize-1),
+		float32(y),
 		1,
-		float64(CellSize),
+		float32(CellSize),
 		borderColor,
+		false,
 	)
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x),
-		float64(y+CellSize-1),
-		float64(CellSize),
+		float32(x),
+		float32(y+CellSize-1),
+		float32(CellSize),
 		1,
 		borderColor,
+		false,
 	)
 }
 
 // drawEmptyCell draws an empty cell
 func (r *Renderer) drawEmptyCell(screen *ebiten.Image, x, y int) {
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x),
-		float64(y),
-		float64(CellSize),
-		float64(CellSize),
+		float32(x),
+		float32(y),
+		float32(CellSize),
+		float32(CellSize),
 		color.RGBA{40, 40, 40, 255},
+		false,
 	)
 
 	// Draw cell border
 	borderColor := color.RGBA{20, 20, 20, 255}
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x),
-		float64(y),
-		float64(CellSize),
+		float32(x),
+		float32(y),
+		float32(CellSize),
 		1,
 		borderColor,
+		false,
 	)
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x),
-		float64(y),
+		float32(x),
+		float32(y),
 		1,
-		float64(CellSize),
+		float32(CellSize),
 		borderColor,
+		false,
 	)
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x+CellSize-1),
-		float64(y),
+		float32(x+CellSize-1),
+		float32(y),
 		1,
-		float64(CellSize),
+		float32(CellSize),
 		borderColor,
+		false,
 	)
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(x),
-		float64(y+CellSize-1),
-		float64(CellSize),
+		float32(x),
+		float32(y+CellSize-1),
+		float32(CellSize),
 		1,
 		borderColor,
+		false,
 	)
 }
 
 // drawNextPiecePreview draws the next piece preview
 func (r *Renderer) drawNextPiecePreview(screen *ebiten.Image) {
 	// Draw preview box with border
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(PreviewX-12),
-		float64(PreviewY-32),
+		float32(PreviewX-12),
+		float32(PreviewY-32),
 		124,
 		104,
 		color.RGBA{100, 100, 100, 255},
+		false,
 	)
 
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(PreviewX-10),
-		float64(PreviewY-30),
+		float32(PreviewX-10),
+		float32(PreviewY-30),
 		120,
 		100,
 		color.RGBA{60, 60, 60, 255},
+		false,
 	)
 
-	text.Draw(screen, "Next Piece:", r.font, PreviewX-5, PreviewY-15, color.White)
+	text.Draw(screen, "Next Piece:", r.font, PreviewX-5, PreviewY-15, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	if r.game.NextPiece != nil {
 		piece := r.game.NextPiece
@@ -351,25 +365,27 @@ func (r *Renderer) drawNextPiecePreview(screen *ebiten.Image) {
 // drawHeldPiece draws the held piece
 func (r *Renderer) drawHeldPiece(screen *ebiten.Image) {
 	// Draw hold box with border
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(HoldX-12),
-		float64(HoldY-32),
+		float32(HoldX-12),
+		float32(HoldY-32),
 		124,
 		104,
 		color.RGBA{100, 100, 100, 255},
+		false,
 	)
 
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(HoldX-10),
-		float64(HoldY-30),
+		float32(HoldX-10),
+		float32(HoldY-30),
 		120,
 		100,
 		color.RGBA{60, 60, 60, 255},
+		false,
 	)
 
-	text.Draw(screen, "Hold Piece:", r.font, HoldX-5, HoldY-15, color.White)
+	text.Draw(screen, "Hold Piece:", r.font, HoldX-5, HoldY-15, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	heldPiece := r.game.GetHeldPiece()
 	if heldPiece != nil {
@@ -390,95 +406,99 @@ func (r *Renderer) drawHeldPiece(screen *ebiten.Image) {
 		}
 	} else {
 		// Draw empty indicator
-		text.Draw(screen, "Empty", r.font, HoldX+5, HoldY+30, color.White)
+		text.Draw(screen, "Empty", r.font, HoldX+5, HoldY+30, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 	}
 }
 
 // drawGameStats draws the game statistics
 func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 	// Draw stats box with border
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(PreviewX-12),
-		float64(PreviewY+78),
+		float32(PreviewX-12),
+		float32(PreviewY+78),
 		124,
 		124,
 		color.RGBA{100, 100, 100, 255},
+		false,
 	)
 
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
-		float64(PreviewX-10),
-		float64(PreviewY+80),
+		float32(PreviewX-10),
+		float32(PreviewY+80),
 		120,
 		120,
 		color.RGBA{60, 60, 60, 255},
+		false,
 	)
 
 	// Draw score
-	text.Draw(screen, "Score:", r.font, PreviewX-5, PreviewY+100, color.White)
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetScore()), r.font, PreviewX+5, PreviewY+120, color.White)
+	text.Draw(screen, "Score:", r.font, PreviewX-5, PreviewY+100, color.White)                             // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetScore()), r.font, PreviewX+5, PreviewY+120, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw level
-	text.Draw(screen, "Level:", r.font, PreviewX-5, PreviewY+140, color.White)
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLevel()), r.font, PreviewX+5, PreviewY+160, color.White)
+	text.Draw(screen, "Level:", r.font, PreviewX-5, PreviewY+140, color.White)                             // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLevel()), r.font, PreviewX+5, PreviewY+160, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw lines cleared
-	text.Draw(screen, "Lines:", r.font, PreviewX-5, PreviewY+180, color.White)
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, PreviewY+200, color.White)
+	text.Draw(screen, "Lines:", r.font, PreviewX-5, PreviewY+180, color.White)                                    // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, PreviewY+200, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 }
 
 // drawPauseOverlay draws the pause screen overlay
 func (r *Renderer) drawPauseOverlay(screen *ebiten.Image) {
 	// Semi-transparent overlay
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
 		0,
 		0,
-		float64(ScreenWidth),
-		float64(ScreenHeight),
+		float32(ScreenWidth),
+		float32(ScreenHeight),
 		color.RGBA{0, 0, 0, 128},
+		false,
 	)
 
 	// Pause text
 	msg := "PAUSED"
 	x := (ScreenWidth - len(msg)*7) / 2
 	y := ScreenHeight/2 - 10
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Press ESC to resume"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 30
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 }
 
 // drawGameOverOverlay draws the game over screen overlay
 func (r *Renderer) drawGameOverOverlay(screen *ebiten.Image) {
 	// Semi-transparent overlay
-	ebitenutil.DrawRect(
+	vector.DrawFilledRect(
 		screen,
 		0,
 		0,
-		float64(ScreenWidth),
-		float64(ScreenHeight),
+		float32(ScreenWidth),
+		float32(ScreenHeight),
 		color.RGBA{0, 0, 0, 192},
+		false,
 	)
 
 	// Game over text
 	msg := "GAME OVER"
 	x := (ScreenWidth - len(msg)*7) / 2
 	y := ScreenHeight/2 - 30
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Final score
 	msg = fmt.Sprintf("Final Score: %d", r.game.GetScore())
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 30
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Restart instructions
 	msg = "Press ENTER to play again"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 30
-	text.Draw(screen, msg, r.font, x, y, color.White)
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 }

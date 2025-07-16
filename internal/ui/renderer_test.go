@@ -4,11 +4,16 @@ import (
 	"image/color"
 	"testing"
 
-	"github.com/briancain/go-tetris/internal/tetris"
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/briancain/go-tetris/internal/tetris"
 )
 
 func TestNewRenderer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+	}
+
 	game := tetris.NewGame()
 	renderer := NewRenderer(game)
 
@@ -30,7 +35,11 @@ func TestNewRenderer(t *testing.T) {
 	}
 }
 
-func TestDrawCell(_ *testing.T) {
+func TestDrawCell(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+	}
+
 	game := tetris.NewGame()
 	renderer := NewRenderer(game)
 
@@ -45,7 +54,11 @@ func TestDrawCell(_ *testing.T) {
 	// so we'll just verify that the method doesn't panic
 }
 
-func TestDrawEmptyCell(_ *testing.T) {
+func TestDrawEmptyCell(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+	}
+
 	game := tetris.NewGame()
 	renderer := NewRenderer(game)
 
@@ -59,6 +72,8 @@ func TestDrawEmptyCell(_ *testing.T) {
 }
 
 func TestScreenDimensions(t *testing.T) {
+	// This test doesn't use Ebiten directly, so it can run in CI
+
 	// Test that screen dimensions are reasonable
 	if ScreenWidth <= 0 || ScreenHeight <= 0 {
 		t.Errorf("Invalid screen dimensions: %dx%d", ScreenWidth, ScreenHeight)
@@ -86,6 +101,8 @@ func TestScreenDimensions(t *testing.T) {
 }
 
 func TestPieceColors(t *testing.T) {
+	// This test doesn't use Ebiten directly, so it can run in CI
+
 	// Test that we have colors for all piece types
 	if len(pieceColors) != 9 { // Empty + 7 piece types + Locked
 		t.Errorf("Expected 9 piece colors, got %d", len(pieceColors))
