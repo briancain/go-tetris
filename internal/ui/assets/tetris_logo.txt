@@ -1,0 +1,7 @@
+To comply with the Tetris Guidelines, you need to obtain the official Tetris logo from The Tetris Company.
+
+The logo should be saved as tetris_logo.png in this directory.
+
+For legal reasons, we cannot include the actual logo in this repository.
+
+The Tetris brand and Tetris logos are trademarks of The Tetris Company, LLC.

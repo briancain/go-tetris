@@ -61,11 +61,18 @@ go build -o bin/tetris ./cmd
 go run ./cmd
 ```
 
+## Tetris Logo
+
+To fully comply with the Tetris Guidelines, you need to obtain the official Tetris logo from The Tetris Company and place it in the `internal/ui/assets` directory as `tetris_logo.png`.
+
+The Tetris brand and Tetris logos are trademarks of The Tetris Company, LLC.
+
 ## Project Structure
 
 - `cmd/`: Entry point for the application
 - `internal/tetris/`: Core game logic and mechanics
 - `internal/ui/`: Rendering and user interface components
+- `internal/ui/assets/`: Game assets including the Tetris logo
 
 ## License
 

@@ -40,6 +40,9 @@ This document outlines how this project implements the official Tetris Guideline
 - ✅ Uses "Tetriminos" as per guidelines
 - ✅ Uses proper piece names (I, J, L, O, S, T, Z)
 
+### Branding
+- ✅ Support for Roger Dean's Tetris logo (requires user to provide the actual logo file)
+
 ## Scoring and Mechanics
 
 ### T-Spin Detection
@@ -58,9 +61,6 @@ This document outlines how this project implements the official Tetris Guideline
 ### Audio
 - [ ] Add Korobeiniki (Tetris theme song)
 - [ ] Consider adding Katjusha or Kalinka songs
-
-### Branding
-- [ ] Include Roger Dean's Tetris logo
 
 ## References
 

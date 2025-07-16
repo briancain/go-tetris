@@ -55,14 +55,19 @@ type Renderer struct {
 	game     *tetris.Game
 	boardImg *ebiten.Image
 	font     font.Face
+	logoImg  *ebiten.Image
 }
 
 // NewRenderer creates a new renderer for the game
 func NewRenderer(game *tetris.Game) *Renderer {
+	// Try to load the Tetris logo
+	logoImg := loadImage("assets/tetris_logo.png")
+
 	return &Renderer{
 		game:     game,
 		boardImg: ebiten.NewImage(ScreenWidth, ScreenHeight),
 		font:     basicfont.Face7x13,
+		logoImg:  logoImg,
 	}
 }
 
@@ -92,14 +97,30 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 
 // drawMenu draws the main menu
 func (r *Renderer) drawMenu(screen *ebiten.Image) {
-	msg := "TETRIS"
-	x := (ScreenWidth - len(msg)*7) / 2
-	y := ScreenHeight/3 - 40
-	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+	// Draw the Tetris logo if available
+	if r.logoImg != nil {
+		logoWidth := r.logoImg.Bounds().Dx()
+		logoHeight := r.logoImg.Bounds().Dy()
 
-	msg = "Official Guidelines Edition"
-	x = (ScreenWidth - len(msg)*7) / 2
-	y += 20
+		// Center the logo horizontally
+		x := (ScreenWidth - logoWidth) / 2
+		y := ScreenHeight/4 - logoHeight/2
+
+		// Draw the logo
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(x), float64(y))
+		screen.DrawImage(r.logoImg, op)
+	} else {
+		// Fallback to text if logo is not available
+		msg := "TETRIS"
+		x := (ScreenWidth - len(msg)*7) / 2
+		y := ScreenHeight / 4
+		text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+	}
+
+	msg := "Official Guidelines Edition"
+	x := (ScreenWidth - len(msg)*7) / 2
+	y := ScreenHeight / 3
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Press ENTER to start"
