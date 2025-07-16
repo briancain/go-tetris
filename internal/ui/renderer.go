@@ -40,13 +40,13 @@ const (
 // Tetris piece colors
 var pieceColors = []color.RGBA{
 	{0, 0, 0, 0},         // Empty
-	{0, 255, 255, 255},   // I - Cyan
-	{0, 0, 255, 255},     // J - Blue
-	{255, 165, 0, 255},   // L - Orange
-	{255, 255, 0, 255},   // O - Yellow
-	{0, 255, 0, 255},     // S - Green
-	{128, 0, 128, 255},   // T - Purple
-	{255, 0, 0, 255},     // Z - Red
+	{0, 255, 255, 255},   // CyanI - Cyan I
+	{0, 0, 255, 255},     // BlueJ - Blue J
+	{255, 165, 0, 255},   // OrangeL - Orange L
+	{255, 255, 0, 255},   // YellowO - Yellow O
+	{0, 255, 0, 255},     // GreenS - Green S
+	{128, 0, 128, 255},   // PurpleT - Purple T
+	{255, 0, 0, 255},     // RedZ - Red Z
 	{128, 128, 128, 255}, // Locked - Gray
 }
 
@@ -94,7 +94,12 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 func (r *Renderer) drawMenu(screen *ebiten.Image) {
 	msg := "TETRIS"
 	x := (ScreenWidth - len(msg)*7) / 2
-	y := ScreenHeight/3 - 20
+	y := ScreenHeight/3 - 40
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+	msg = "Official Guidelines Edition"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y += 20
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Press ENTER to start"
@@ -146,10 +151,13 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 		false,
 	)
 
-	// Draw the board cells
+	// Draw the board cells - only draw the visible part (not the buffer rows)
 	for y := 0; y < tetris.BoardHeight; y++ {
+		// Calculate the actual y position in the board array (skip buffer rows)
+		boardY := y + (tetris.BoardHeightWithBuffer - tetris.BoardHeight)
+
 		for x := 0; x < tetris.BoardWidth; x++ {
-			cell := r.game.Board.Cells[y][x]
+			cell := r.game.Board.Cells[boardY][x]
 			if cell != tetris.Empty {
 				r.drawCell(screen, BoardX+x*CellSize, BoardY+y*CellSize, pieceColors[cell])
 			} else {
@@ -167,9 +175,15 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 		for i := 0; i < len(piece.Shape); i++ {
 			for j := 0; j < len(piece.Shape[i]); j++ {
 				if piece.Shape[i][j] {
-					x := BoardX + (piece.X+j)*CellSize
-					y := BoardY + (piece.Y+i)*CellSize
-					r.drawCell(screen, x, y, pieceColor)
+					// Calculate the visual position, accounting for buffer rows
+					visualY := piece.Y - (tetris.BoardHeightWithBuffer - tetris.BoardHeight)
+
+					// Only draw if the piece is in the visible area
+					if visualY+i >= 0 {
+						x := BoardX + (piece.X+j)*CellSize
+						y := BoardY + (visualY+i)*CellSize
+						r.drawCell(screen, x, y, pieceColor)
+					}
 				}
 			}
 		}
@@ -191,11 +205,15 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 		// Only draw ghost if it's different from the current position
 		if ghostY > piece.Y {
 			ghostColor := color.RGBA{pieceColor.R, pieceColor.G, pieceColor.B, 100}
+
+			// Calculate the visual position for the ghost piece
+			visualGhostY := ghostY - (tetris.BoardHeightWithBuffer - tetris.BoardHeight)
+
 			for i := 0; i < len(piece.Shape); i++ {
 				for j := 0; j < len(piece.Shape[i]); j++ {
-					if piece.Shape[i][j] {
+					if piece.Shape[i][j] && visualGhostY+i >= 0 {
 						x := BoardX + (piece.X+j)*CellSize
-						y := BoardY + (ghostY+i)*CellSize
+						y := BoardY + (visualGhostY+i)*CellSize
 						r.drawCell(screen, x, y, ghostColor)
 					}
 				}
@@ -418,7 +436,7 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 		float32(PreviewX-12),
 		float32(PreviewY+78),
 		124,
-		124,
+		164, // Increased height to accommodate more stats
 		color.RGBA{100, 100, 100, 255},
 		false,
 	)
@@ -428,7 +446,7 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 		float32(PreviewX-10),
 		float32(PreviewY+80),
 		120,
-		120,
+		160, // Increased height to accommodate more stats
 		color.RGBA{60, 60, 60, 255},
 		false,
 	)
@@ -444,6 +462,16 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 	// Draw lines cleared
 	text.Draw(screen, "Lines:", r.font, PreviewX-5, PreviewY+180, color.White)                                    // nolint:staticcheck // Using deprecated API for compatibility
 	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, PreviewY+200, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+	// Draw Back-to-Back status
+	if r.game.GetBackToBack() {
+		text.Draw(screen, "Back-to-Back", r.font, PreviewX-5, PreviewY+220, color.RGBA{255, 215, 0, 255}) // Gold color
+	}
+
+	// Draw last clear type
+	if r.game.GetLastClearWasTSpin() {
+		text.Draw(screen, "T-Spin!", r.font, PreviewX-5, PreviewY+240, color.RGBA{255, 105, 180, 255}) // Hot pink
+	}
 }
 
 // drawPauseOverlay draws the pause screen overlay

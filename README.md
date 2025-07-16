@@ -2,16 +2,22 @@
 
 [![Go Tetris CI](https://github.com/briancain/go-tetris/actions/workflows/main.yml/badge.svg)](https://github.com/briancain/go-tetris/actions/workflows/main.yml)
 
-A Tetris clone written in Go using the Ebiten game library.
+A Tetris clone written in Go using the Ebiten game library. Compliant with the official Tetris Guidelines.
 
 Made with Amazon Q
 
 ## Features
 
-- Classic Tetris gameplay
+- Classic Tetris gameplay following official Tetris Guidelines
+- Standard 10×22 playfield (with top 2 rows hidden)
+- Official Tetrimino colors (Cyan I, Yellow O, Purple T, Green S, Red Z, Blue J, Orange L)
+- Super Rotation System (SRS) with proper wall kicks
+- 7-bag Random Generator for fair piece distribution
+- T-Spin detection and bonus scoring
+- Back-to-Back bonus scoring
 - Increasing difficulty levels
-- Score tracking
 - Next piece preview
+- Hold piece functionality
 - Ghost piece showing where the current piece will land
 - Pause functionality
 
@@ -19,7 +25,7 @@ Made with Amazon Q
 
 - **Arrow Left/Right**: Move piece horizontally
 - **Arrow Down**: Soft drop (accelerate downward)
-- **Arrow Up**: Rotate piece
+- **Arrow Up**: Rotate piece clockwise
 - **Space**: Hard drop (instantly drop piece)
 - **Escape**: Pause/Resume game
 - **Shift**: Hold current piece for later use

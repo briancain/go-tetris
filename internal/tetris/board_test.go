@@ -14,18 +14,18 @@ func TestNewBoard(t *testing.T) {
 	}
 
 	// Check board dimensions
-	if len(board.Cells) != BoardHeight {
-		t.Errorf("Expected board height to be %d, got %d", BoardHeight, len(board.Cells))
+	if len(board.Cells) != BoardHeightWithBuffer {
+		t.Errorf("Expected board height to be %d, got %d", BoardHeightWithBuffer, len(board.Cells))
 	}
 
-	for i := 0; i < BoardHeight; i++ {
+	for i := 0; i < BoardHeightWithBuffer; i++ {
 		if len(board.Cells[i]) != BoardWidth {
 			t.Errorf("Expected board width at row %d to be %d, got %d", i, BoardWidth, len(board.Cells[i]))
 		}
 	}
 
 	// Check that all cells are empty
-	for y := 0; y < BoardHeight; y++ {
+	for y := 0; y < BoardHeightWithBuffer; y++ {
 		for x := 0; x < BoardWidth; x++ {
 			if board.Cells[y][x] != Empty {
 				t.Errorf("Expected cell at (%d,%d) to be Empty, got %d", x, y, board.Cells[y][x])
@@ -53,12 +53,12 @@ func TestIsValidPosition(t *testing.T) {
 	}
 
 	// Invalid position - out of bounds vertically
-	if board.IsValidPosition(piece, 3, BoardHeight) {
-		t.Error("Expected position (3,BoardHeight) to be invalid")
+	if board.IsValidPosition(piece, 3, BoardHeightWithBuffer) {
+		t.Error("Expected position (3,BoardHeightWithBuffer) to be invalid")
 	}
 
 	// Test collision with existing blocks
-	board.Cells[5][3] = I
+	board.Cells[5][3] = CyanI
 	piece.Y = 3
 	if board.IsValidPosition(piece, 3, 5) {
 		t.Error("Expected position to be invalid due to collision")
@@ -73,13 +73,13 @@ func TestPlacePiece(t *testing.T) {
 
 	board.PlacePiece(piece, piece.X, piece.Y, false)
 
-	// Check that the piece cells are now on the board
+	// Check that the piece cells are now on the board with the correct color
 	for i := 0; i < len(piece.Shape); i++ {
 		for j := 0; j < len(piece.Shape[i]); j++ {
 			if piece.Shape[i][j] {
-				if Cell(piece.Type) != board.Cells[piece.Y+i][piece.X+j] {
-					t.Errorf("Expected cell at (%d,%d) to be %d, got %d",
-						piece.X+j, piece.Y+i, Cell(piece.Type), board.Cells[piece.Y+i][piece.X+j])
+				if board.Cells[piece.Y+i][piece.X+j] != CyanI {
+					t.Errorf("Expected cell at (%d,%d) to be CyanI, got %d",
+						piece.X+j, piece.Y+i, board.Cells[piece.Y+i][piece.X+j])
 				}
 			}
 		}
@@ -91,7 +91,7 @@ func TestClearLines(t *testing.T) {
 
 	// Fill a line
 	for x := 0; x < BoardWidth; x++ {
-		board.Cells[BoardHeight-1][x] = I
+		board.Cells[BoardHeight-1][x] = CyanI
 	}
 
 	// Clear lines and check result
@@ -112,7 +112,7 @@ func TestClearLines(t *testing.T) {
 	// Test multiple lines
 	for y := BoardHeight - 3; y < BoardHeight; y++ {
 		for x := 0; x < BoardWidth; x++ {
-			board.Cells[y][x] = I
+			board.Cells[y][x] = CyanI
 		}
 	}
 
@@ -132,14 +132,14 @@ func TestIsLineFull(t *testing.T) {
 	}
 
 	// Partially filled line
-	board.Cells[0][0] = I
+	board.Cells[0][0] = CyanI
 	if board.isLineFull(0) {
 		t.Error("Expected partially filled line to not be full")
 	}
 
 	// Full line
 	for x := 0; x < BoardWidth; x++ {
-		board.Cells[1][x] = I
+		board.Cells[1][x] = CyanI
 	}
 	if !board.isLineFull(1) {
 		t.Error("Expected full line to be full")

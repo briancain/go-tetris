@@ -2,8 +2,9 @@ package tetris
 
 // Board dimensions
 const (
-	BoardWidth  = 10
-	BoardHeight = 20
+	BoardWidth            = 10
+	BoardHeight           = 20
+	BoardHeightWithBuffer = 22 // Total height including hidden rows
 )
 
 // Cell represents a single cell in the game board
@@ -11,20 +12,20 @@ type Cell int
 
 // Cell states
 const (
-	Empty Cell = iota
-	I
-	J
-	L
-	O
-	S
-	T
-	Z
-	Locked // For pieces that have been locked in place
+	Empty   Cell = iota
+	CyanI        // I - Cyan
+	BlueJ        // J - Blue
+	OrangeL      // L - Orange
+	YellowO      // O - Yellow
+	GreenS       // S - Green
+	PurpleT      // T - Purple
+	RedZ         // Z - Red
+	Locked       // For pieces that have been locked in place
 )
 
 // Board represents the Tetris game board
 type Board struct {
-	Cells [BoardHeight][BoardWidth]Cell
+	Cells [BoardHeightWithBuffer][BoardWidth]Cell
 }
 
 // NewBoard creates a new empty board
@@ -36,7 +37,7 @@ func NewBoard() *Board {
 
 // Clear resets the board to empty
 func (b *Board) Clear() {
-	for y := 0; y < BoardHeight; y++ {
+	for y := 0; y < BoardHeightWithBuffer; y++ {
 		for x := 0; x < BoardWidth; x++ {
 			b.Cells[y][x] = Empty
 		}
@@ -51,7 +52,7 @@ func (b *Board) IsValidPosition(piece *Piece, x, y int) bool {
 				newX, newY := x+j, y+i
 
 				// Check if out of bounds
-				if newX < 0 || newX >= BoardWidth || newY < 0 || newY >= BoardHeight {
+				if newX < 0 || newX >= BoardWidth || newY < 0 || newY >= BoardHeightWithBuffer {
 					return false
 				}
 
@@ -67,8 +68,24 @@ func (b *Board) IsValidPosition(piece *Piece, x, y int) bool {
 
 // PlacePiece places a piece on the board
 func (b *Board) PlacePiece(piece *Piece, x, y int, _ bool) {
-	// Always use the piece's original color type
-	cellType := Cell(piece.Type)
+	// Map piece type to the correct cell type with guideline colors
+	var cellType Cell
+	switch piece.Type {
+	case TypeI:
+		cellType = CyanI
+	case TypeJ:
+		cellType = BlueJ
+	case TypeL:
+		cellType = OrangeL
+	case TypeO:
+		cellType = YellowO
+	case TypeS:
+		cellType = GreenS
+	case TypeT:
+		cellType = PurpleT
+	case TypeZ:
+		cellType = RedZ
+	}
 
 	for i := 0; i < len(piece.Shape); i++ {
 		for j := 0; j < len(piece.Shape[i]); j++ {
@@ -83,7 +100,8 @@ func (b *Board) PlacePiece(piece *Piece, x, y int, _ bool) {
 func (b *Board) ClearLines() int {
 	linesCleared := 0
 
-	for y := BoardHeight - 1; y >= 0; y-- {
+	// Only check the visible rows (not the buffer rows)
+	for y := BoardHeightWithBuffer - 1; y >= BoardHeightWithBuffer-BoardHeight; y-- {
 		if b.isLineFull(y) {
 			b.clearLine(y)
 			linesCleared++

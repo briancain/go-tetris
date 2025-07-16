@@ -56,3 +56,13 @@ func (g *Game) GetHeldPiece() *Piece {
 	}
 	return g.HeldPiece.Copy()
 }
+
+// GetBackToBack returns whether the player has a Back-to-Back bonus active
+func (g *Game) GetBackToBack() bool {
+	return g.BackToBack
+}
+
+// GetLastClearWasTSpin returns whether the last clear was a T-spin
+func (g *Game) GetLastClearWasTSpin() bool {
+	return g.LastClearWasTSpin
+}

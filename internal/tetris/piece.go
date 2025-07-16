@@ -19,12 +19,53 @@ const (
 	TypeZ
 )
 
+// Rotation states
+const (
+	RotationState0 = iota // Initial orientation
+	RotationState1        // 90 degrees clockwise
+	RotationState2        // 180 degrees
+	RotationState3        // 270 degrees clockwise
+)
+
+// SRS wall kick data for J, L, S, T, Z pieces
+var wallKickDataJLSTZ = [][][]int{
+	{ // 0->1
+		{-1, 0}, {-1, -1}, {0, 2}, {-1, 2},
+	},
+	{ // 1->2
+		{1, 0}, {1, 1}, {0, -2}, {1, -2},
+	},
+	{ // 2->3
+		{1, 0}, {1, -1}, {0, 2}, {1, 2},
+	},
+	{ // 3->0
+		{-1, 0}, {-1, 1}, {0, -2}, {-1, -2},
+	},
+}
+
+// SRS wall kick data for I piece
+var wallKickDataI = [][][]int{
+	{ // 0->1
+		{-2, 0}, {1, 0}, {-2, 1}, {1, -2},
+	},
+	{ // 1->2
+		{-1, 0}, {2, 0}, {-1, -2}, {2, 1},
+	},
+	{ // 2->3
+		{2, 0}, {-1, 0}, {2, -1}, {-1, 2},
+	},
+	{ // 3->0
+		{1, 0}, {-2, 0}, {1, 2}, {-2, -1},
+	},
+}
+
 // Piece represents a tetromino piece
 type Piece struct {
-	Type  PieceType
-	Shape [][]bool
-	X     int
-	Y     int
+	Type          PieceType
+	Shape         [][]bool
+	X             int
+	Y             int
+	RotationState int // Current rotation state (0-3)
 }
 
 // Tetromino shapes
@@ -106,14 +147,22 @@ func NewPiece(pieceType PieceType) *Piece {
 	}
 
 	// Start position at the top center of the board
-	x := (BoardWidth - len(shape[0])) / 2
+	var x int
+	if pieceType == TypeI || pieceType == TypeO {
+		// I and O spawn in the middle columns
+		x = (BoardWidth - len(shape[0])) / 2
+	} else {
+		// Others spawn in the left-middle columns
+		x = (BoardWidth-len(shape[0]))/2 - 1
+	}
 	y := 0
 
 	return &Piece{
-		Type:  pieceType,
-		Shape: shapeCopy,
-		X:     x,
-		Y:     y,
+		Type:          pieceType,
+		Shape:         shapeCopy,
+		X:             x,
+		Y:             y,
+		RotationState: RotationState0,
 	}
 }
 
@@ -149,6 +198,9 @@ func (p *Piece) Rotate() {
 	}
 
 	p.Shape = rotated
+
+	// Update rotation state
+	p.RotationState = (p.RotationState + 1) % 4
 }
 
 // Move moves the piece by the given delta
@@ -166,9 +218,54 @@ func (p *Piece) Copy() *Piece {
 	}
 
 	return &Piece{
-		Type:  p.Type,
-		Shape: shapeCopy,
-		X:     p.X,
-		Y:     p.Y,
+		Type:          p.Type,
+		Shape:         shapeCopy,
+		X:             p.X,
+		Y:             p.Y,
+		RotationState: p.RotationState,
 	}
+}
+
+// PieceGenerator manages the random generation of pieces using the 7-bag system
+type PieceGenerator struct {
+	bag      []PieceType
+	bagIndex int
+	rng      *rand.Rand
+}
+
+// NewPieceGenerator creates a new piece generator with the 7-bag system
+func NewPieceGenerator() *PieceGenerator {
+	generator := &PieceGenerator{
+		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
+	generator.refillBag()
+	return generator
+}
+
+// refillBag creates a new shuffled bag of all 7 piece types
+func (pg *PieceGenerator) refillBag() {
+	// Create a bag with all 7 piece types
+	pg.bag = []PieceType{TypeI, TypeJ, TypeL, TypeO, TypeS, TypeT, TypeZ}
+
+	// Shuffle the bag
+	pg.rng.Shuffle(len(pg.bag), func(i, j int) {
+		pg.bag[i], pg.bag[j] = pg.bag[j], pg.bag[i]
+	})
+
+	pg.bagIndex = 0
+}
+
+// NextPiece gets the next piece from the bag
+func (pg *PieceGenerator) NextPiece() *Piece {
+	// If we've used all pieces in the bag, refill it
+	if pg.bagIndex >= len(pg.bag) {
+		pg.refillBag()
+	}
+
+	// Get the next piece type from the bag
+	pieceType := pg.bag[pg.bagIndex]
+	pg.bagIndex++
+
+	// Create and return a new piece of this type
+	return NewPiece(pieceType)
 }
