@@ -25,6 +25,6 @@ func main() {
 	if err := headlessDriver.Run(headlessGame); err != nil {
 		log.Fatal(err)
 	}
-	
+
 	log.Println("Headless build completed successfully")
 }
