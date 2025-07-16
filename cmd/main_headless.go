@@ -1,6 +1,11 @@
 //go:build headless
 // +build headless
 
+// This file is used for cross-compilation in CI environments
+// It provides a minimal implementation that can be built without
+// requiring a display or graphics libraries
+// Use with build tags: headless,ebitennogl,ebitennonscreen
+
 package main
 
 import (

@@ -110,23 +110,28 @@ all: build
 
 # Cross-platform build targets
 .PHONY: build-windows build-macos build-macos-arm64 build-all
+# Cross-compilation build tags:
+# - headless: Our custom implementation for CI builds
+# - ebitennogl: Disables OpenGL dependencies in Ebiten
+# - ebitennonscreen: Disables screen-related functionality in Ebiten
+
 # Build for Windows
 build-windows:
 	mkdir -p $(BIN_DIR)
 	# Use pure Go mode for cross-compilation
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME).exe ./cmd
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -tags=headless,ebitennogl,ebitennonscreen -o $(BIN_DIR)/$(BINARY_NAME).exe ./cmd
 
 # Build for macOS (amd64)
 build-macos:
 	mkdir -p $(BIN_DIR)
 	# Use pure Go mode for cross-compilation
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME)_darwin_amd64 ./cmd
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags=headless,ebitennogl,ebitennonscreen -o $(BIN_DIR)/$(BINARY_NAME)_darwin_amd64 ./cmd
 
 # Build for macOS (arm64)
 build-macos-arm64:
 	mkdir -p $(BIN_DIR)
 	# Use pure Go mode for cross-compilation
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags=headless -o $(BIN_DIR)/$(BINARY_NAME)_darwin_arm64 ./cmd
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags=headless,ebitennogl,ebitennonscreen -o $(BIN_DIR)/$(BINARY_NAME)_darwin_arm64 ./cmd
 
 # Build for all platforms
 build-all: build build-windows build-macos build-macos-arm64

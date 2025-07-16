@@ -145,4 +145,8 @@ jobs:
         if [ "${{ matrix.goos }}" = "windows" ]; then
           output_name="bin/tetris.exe"
         fi
-        go build -v -tags=headless -o $output_name ./cmd
+        # Build with special tags to avoid GLFW/OpenGL dependencies:
+        # - headless: Our custom implementation for CI builds
+        # - ebitennogl: Disables OpenGL dependencies in Ebiten
+        # - ebitennonscreen: Disables screen-related functionality in Ebiten
+        go build -v -tags=headless,ebitennogl,ebitennonscreen -o $output_name ./cmd

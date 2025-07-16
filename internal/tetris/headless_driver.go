@@ -42,5 +42,7 @@ func (d *HeadlessDriver) DeviceScaleFactor() float64 {
 // Run is a no-op in headless mode
 func (d *HeadlessDriver) Run(game ebiten.Game) error {
 	// In headless mode, we don't actually run the game loop
+	// Just call the game's Layout method once to ensure it's implemented
+	_, _ = game.Layout(640, 480)
 	return nil
 }
