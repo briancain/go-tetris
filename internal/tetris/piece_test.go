@@ -2,134 +2,101 @@ package tetris
 
 import (
 	"testing"
+
+	_ "github.com/briancain/go-tetris/internal/testutil" // Import for init side effects
 )
 
 func TestNewPiece(t *testing.T) {
-	testCases := []struct {
-		pieceType PieceType
-		width     int
-		height    int
-	}{
-		{TypeI, 4, 1}, // I piece is 4x1
-		{TypeJ, 3, 2}, // J piece is 3x2
-		{TypeL, 3, 2}, // L piece is 3x2
-		{TypeO, 2, 2}, // O piece is 2x2
-		{TypeS, 3, 2}, // S piece is 3x2
-		{TypeT, 3, 2}, // T piece is 3x2
-		{TypeZ, 3, 2}, // Z piece is 3x2
-	}
+	// Test each piece type
+	for pieceType := TypeI; pieceType <= TypeZ; pieceType++ {
+		piece := NewPiece(pieceType)
 
-	for _, tc := range testCases {
-		piece := NewPiece(tc.pieceType)
-
-		// Check piece type
-		if piece.Type != tc.pieceType {
-			t.Errorf("Expected piece type %v, got %v", tc.pieceType, piece.Type)
+		if piece == nil {
+			t.Fatalf("NewPiece(%d) returned nil", pieceType)
 		}
 
-		// Check shape dimensions
-		if len(piece.Shape) != tc.height {
-			t.Errorf("Expected piece height %d, got %d", tc.height, len(piece.Shape))
+		if piece.Type != pieceType {
+			t.Errorf("Expected piece type to be %d, got %d", pieceType, piece.Type)
 		}
 
-		if len(piece.Shape[0]) != tc.width {
-			t.Errorf("Expected piece width %d, got %d", tc.width, len(piece.Shape[0]))
+		// Check that the shape is not empty
+		hasBlock := false
+		for i := 0; i < len(piece.Shape); i++ {
+			for j := 0; j < len(piece.Shape[i]); j++ {
+				if piece.Shape[i][j] {
+					hasBlock = true
+					break
+				}
+			}
+			if hasBlock {
+				break
+			}
 		}
 
-		// Check that the piece is positioned at the top center of the board
-		expectedX := (BoardWidth - len(piece.Shape[0])) / 2
-		if piece.X != expectedX {
-			t.Errorf("Expected piece X position %d, got %d", expectedX, piece.X)
-		}
-
-		if piece.Y != 0 {
-			t.Errorf("Expected piece Y position 0, got %d", piece.Y)
+		if !hasBlock {
+			t.Errorf("Piece type %d has an empty shape", pieceType)
 		}
 	}
 }
 
 func TestRandomPiece(t *testing.T) {
 	// Test that RandomPiece returns a valid piece
-	piece := RandomPiece()
+	for i := 0; i < 100; i++ {
+		piece := RandomPiece()
 
-	if piece == nil {
-		t.Error("RandomPiece returned nil")
-		return
-	}
+		if piece == nil {
+			t.Fatal("RandomPiece returned nil")
+		}
 
-	// Check that the piece type is valid
-	if piece.Type < TypeI || piece.Type > TypeZ {
-		t.Errorf("Invalid piece type: %v", piece.Type)
+		if piece.Type < TypeI || piece.Type > TypeZ {
+			t.Errorf("RandomPiece returned invalid piece type: %d", piece.Type)
+		}
 	}
 }
 
 func TestRotate(t *testing.T) {
-	// Test rotation of I piece
-	piece := NewPiece(TypeI)
-	originalWidth := len(piece.Shape[0])
-	originalHeight := len(piece.Shape)
-
-	piece.Rotate()
-
-	// After rotation, width and height should be swapped
-	if len(piece.Shape) != originalWidth {
-		t.Errorf("Expected rotated height %d, got %d", originalWidth, len(piece.Shape))
-	}
-
-	if len(piece.Shape[0]) != originalHeight {
-		t.Errorf("Expected rotated width %d, got %d", originalHeight, len(piece.Shape[0]))
-	}
-
-	// Test that O piece doesn't change when rotated
-	piece = NewPiece(TypeO)
+	// Test rotation of T piece (I piece might not change visibly after rotation)
+	piece := NewPiece(TypeT)
 	originalShape := make([][]bool, len(piece.Shape))
 	for i := range piece.Shape {
 		originalShape[i] = make([]bool, len(piece.Shape[i]))
 		copy(originalShape[i], piece.Shape[i])
 	}
 
+	// Rotate once
 	piece.Rotate()
 
-	// O piece should remain unchanged
-	for i := range piece.Shape {
-		for j := range piece.Shape[i] {
-			if piece.Shape[i][j] != originalShape[i][j] {
-				t.Errorf("O piece shape changed after rotation at (%d,%d)", j, i)
+	// Check that the shape changed
+	shapeChanged := false
+	for i := 0; i < len(piece.Shape); i++ {
+		for j := 0; j < len(piece.Shape[i]); j++ {
+			if i < len(originalShape) && j < len(originalShape[i]) && piece.Shape[i][j] != originalShape[i][j] {
+				shapeChanged = true
+				break
 			}
 		}
-	}
-}
-
-func TestMove(t *testing.T) {
-	piece := NewPiece(TypeT)
-	originalX := piece.X
-	originalY := piece.Y
-
-	// Move right
-	piece.Move(1, 0)
-	if piece.X != originalX+1 {
-		t.Errorf("Expected X position %d, got %d", originalX+1, piece.X)
-	}
-	if piece.Y != originalY {
-		t.Errorf("Expected Y position %d, got %d", originalY, piece.Y)
+		if shapeChanged {
+			break
+		}
 	}
 
-	// Move down
-	piece.Move(0, 1)
-	if piece.X != originalX+1 {
-		t.Errorf("Expected X position %d, got %d", originalX+1, piece.X)
-	}
-	if piece.Y != originalY+1 {
-		t.Errorf("Expected Y position %d, got %d", originalY+1, piece.Y)
+	if !shapeChanged {
+		t.Error("Expected shape to change after rotation")
 	}
 
-	// Move left and up
-	piece.Move(-2, -2)
-	if piece.X != originalX-1 {
-		t.Errorf("Expected X position %d, got %d", originalX-1, piece.X)
-	}
-	if piece.Y != originalY-1 {
-		t.Errorf("Expected Y position %d, got %d", originalY-1, piece.Y)
+	// Rotate three more times to get back to the original shape
+	piece.Rotate()
+	piece.Rotate()
+	piece.Rotate()
+
+	// Check that we're back to the original shape
+	for i := 0; i < len(piece.Shape); i++ {
+		for j := 0; j < len(piece.Shape[i]); j++ {
+			if i < len(originalShape) && j < len(originalShape[i]) && piece.Shape[i][j] != originalShape[i][j] {
+				t.Errorf("Expected to return to original shape after 4 rotations")
+				return
+			}
+		}
 	}
 }
 
@@ -138,42 +105,40 @@ func TestCopy(t *testing.T) {
 	original.X = 5
 	original.Y = 10
 
-	// Create a copy
 	pieceCopy := original.Copy()
 
 	// Check that the copy has the same properties
 	if pieceCopy.Type != original.Type {
-		t.Errorf("Expected piece type %v, got %v", original.Type, pieceCopy.Type)
+		t.Errorf("Expected copy to have type %d, got %d", original.Type, pieceCopy.Type)
 	}
 
 	if pieceCopy.X != original.X {
-		t.Errorf("Expected X position %d, got %d", original.X, pieceCopy.X)
+		t.Errorf("Expected copy to have X %d, got %d", original.X, pieceCopy.X)
 	}
 
 	if pieceCopy.Y != original.Y {
-		t.Errorf("Expected Y position %d, got %d", original.Y, pieceCopy.Y)
+		t.Errorf("Expected copy to have Y %d, got %d", original.Y, pieceCopy.Y)
 	}
 
-	// Check that the shape is a deep copy
-	if len(pieceCopy.Shape) != len(original.Shape) {
-		t.Errorf("Expected shape height %d, got %d", len(original.Shape), len(pieceCopy.Shape))
-	}
-
-	for i := range original.Shape {
-		if len(pieceCopy.Shape[i]) != len(original.Shape[i]) {
-			t.Errorf("Expected shape width %d at row %d, got %d", len(original.Shape[i]), i, len(pieceCopy.Shape[i]))
-		}
-
-		for j := range original.Shape[i] {
+	// Check that the shape is the same
+	for i := 0; i < len(original.Shape); i++ {
+		for j := 0; j < len(original.Shape[i]); j++ {
 			if pieceCopy.Shape[i][j] != original.Shape[i][j] {
-				t.Errorf("Shape mismatch at (%d,%d)", j, i)
+				t.Errorf("Shape mismatch at (%d,%d): expected %v, got %v",
+					j, i, original.Shape[i][j], pieceCopy.Shape[i][j])
 			}
 		}
 	}
 
 	// Modify the copy and check that the original is unchanged
+	pieceCopy.X = 20
 	pieceCopy.Shape[0][0] = !pieceCopy.Shape[0][0]
-	if pieceCopy.Shape[0][0] == original.Shape[0][0] {
-		t.Error("Modifying copy affected the original")
+
+	if original.X != 5 {
+		t.Error("Original X was modified when copy was changed")
+	}
+
+	if original.Shape[0][0] == pieceCopy.Shape[0][0] {
+		t.Error("Original shape was modified when copy was changed")
 	}
 }

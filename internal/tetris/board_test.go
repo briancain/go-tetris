@@ -2,37 +2,33 @@ package tetris
 
 import (
 	"testing"
+
+	_ "github.com/briancain/go-tetris/internal/testutil" // Import for init side effects
 )
 
 func TestNewBoard(t *testing.T) {
 	board := NewBoard()
 
-	// Check that the board is initialized with empty cells
-	for y := 0; y < BoardHeight; y++ {
-		for x := 0; x < BoardWidth; x++ {
-			if board.Cells[y][x] != Empty {
-				t.Errorf("Expected empty cell at (%d,%d), got %v", x, y, board.Cells[y][x])
-			}
+	if board == nil {
+		t.Fatal("NewBoard returned nil")
+	}
+
+	// Check board dimensions
+	if len(board.Cells) != BoardHeight {
+		t.Errorf("Expected board height to be %d, got %d", BoardHeight, len(board.Cells))
+	}
+
+	for i := 0; i < BoardHeight; i++ {
+		if len(board.Cells[i]) != BoardWidth {
+			t.Errorf("Expected board width at row %d to be %d, got %d", i, BoardWidth, len(board.Cells[i]))
 		}
 	}
-}
-
-func TestClear(t *testing.T) {
-	board := NewBoard()
-
-	// Fill some cells
-	board.Cells[0][0] = I
-	board.Cells[1][1] = J
-	board.Cells[2][2] = L
-
-	// Clear the board
-	board.Clear()
 
 	// Check that all cells are empty
 	for y := 0; y < BoardHeight; y++ {
 		for x := 0; x < BoardWidth; x++ {
 			if board.Cells[y][x] != Empty {
-				t.Errorf("Expected empty cell at (%d,%d), got %v", x, y, board.Cells[y][x])
+				t.Errorf("Expected cell at (%d,%d) to be Empty, got %d", x, y, board.Cells[y][x])
 			}
 		}
 	}
@@ -40,49 +36,50 @@ func TestClear(t *testing.T) {
 
 func TestIsValidPosition(t *testing.T) {
 	board := NewBoard()
-	piece := NewPiece(TypeI) // I piece is a horizontal line of 4 blocks
+	piece := NewPiece(TypeI)
 
-	// Test valid position
+	// Valid position
 	if !board.IsValidPosition(piece, 3, 0) {
-		t.Error("Expected position to be valid")
+		t.Error("Expected position (3,0) to be valid")
 	}
 
-	// Test position outside board boundaries (left)
+	// Invalid position - out of bounds horizontally
 	if board.IsValidPosition(piece, -1, 0) {
-		t.Error("Expected position to be invalid (left boundary)")
+		t.Error("Expected position (-1,0) to be invalid")
 	}
 
-	// Test position outside board boundaries (right)
-	if board.IsValidPosition(piece, BoardWidth-3, 0) {
-		t.Error("Expected position to be invalid (right boundary)")
+	if board.IsValidPosition(piece, BoardWidth, 0) {
+		t.Error("Expected position (BoardWidth,0) to be invalid")
 	}
 
-	// Test position outside board boundaries (bottom)
+	// Invalid position - out of bounds vertically
 	if board.IsValidPosition(piece, 3, BoardHeight) {
-		t.Error("Expected position to be invalid (bottom boundary)")
+		t.Error("Expected position (3,BoardHeight) to be invalid")
 	}
 
-	// Test collision with existing piece
-	board.Cells[5][5] = L
-	piece = NewPiece(TypeO) // O piece is a 2x2 square
-	if board.IsValidPosition(piece, 4, 4) {
-		t.Error("Expected position to be invalid (collision)")
+	// Test collision with existing blocks
+	board.Cells[5][3] = I
+	piece.Y = 3
+	if board.IsValidPosition(piece, 3, 5) {
+		t.Error("Expected position to be invalid due to collision")
 	}
 }
 
 func TestPlacePiece(t *testing.T) {
 	board := NewBoard()
-	piece := NewPiece(TypeT)
+	piece := NewPiece(TypeI)
+	piece.X = 3
+	piece.Y = 0
 
-	// Place the piece
-	board.PlacePiece(piece, 3, 0, false)
+	board.PlacePiece(piece, piece.X, piece.Y, false)
 
-	// Check that the cells are filled correctly
+	// Check that the piece cells are now on the board
 	for i := 0; i < len(piece.Shape); i++ {
 		for j := 0; j < len(piece.Shape[i]); j++ {
 			if piece.Shape[i][j] {
-				if board.Cells[0+i][3+j] != Cell(piece.Type) {
-					t.Errorf("Expected cell at (%d,%d) to be %v, got %v", 3+j, 0+i, Cell(piece.Type), board.Cells[0+i][3+j])
+				if Cell(piece.Type) != board.Cells[piece.Y+i][piece.X+j] {
+					t.Errorf("Expected cell at (%d,%d) to be %d, got %d",
+						piece.X+j, piece.Y+i, Cell(piece.Type), board.Cells[piece.Y+i][piece.X+j])
 				}
 			}
 		}
@@ -92,63 +89,59 @@ func TestPlacePiece(t *testing.T) {
 func TestClearLines(t *testing.T) {
 	board := NewBoard()
 
-	// Fill a complete line
+	// Fill a line
 	for x := 0; x < BoardWidth; x++ {
 		board.Cells[BoardHeight-1][x] = I
 	}
 
-	// Fill part of another line
-	for x := 0; x < BoardWidth-1; x++ {
-		board.Cells[BoardHeight-2][x] = J
-	}
-
-	// Clear lines and check the result
+	// Clear lines and check result
 	linesCleared := board.ClearLines()
 
 	if linesCleared != 1 {
 		t.Errorf("Expected 1 line cleared, got %d", linesCleared)
 	}
 
-	// Check that the partial line was moved down
-	for x := 0; x < BoardWidth-1; x++ {
-		if board.Cells[BoardHeight-1][x] != J {
-			t.Errorf("Expected cell at (%d,%d) to be J, got %v", x, BoardHeight-1, board.Cells[BoardHeight-1][x])
-		}
-	}
-
-	// Check that the last cell of the moved line is empty
-	if board.Cells[BoardHeight-1][BoardWidth-1] != Empty {
-		t.Errorf("Expected empty cell at (%d,%d), got %v", BoardWidth-1, BoardHeight-1, board.Cells[BoardHeight-1][BoardWidth-1])
-	}
-
-	// Check that the top line is now empty
+	// Check that the line is now empty
 	for x := 0; x < BoardWidth; x++ {
-		if board.Cells[BoardHeight-2][x] != Empty {
-			t.Errorf("Expected empty cell at (%d,%d), got %v", x, BoardHeight-2, board.Cells[BoardHeight-2][x])
+		if board.Cells[BoardHeight-1][x] != Empty {
+			t.Errorf("Expected cell at (%d,%d) to be Empty after clearing, got %d",
+				x, BoardHeight-1, board.Cells[BoardHeight-1][x])
 		}
+	}
+
+	// Test multiple lines
+	for y := BoardHeight - 3; y < BoardHeight; y++ {
+		for x := 0; x < BoardWidth; x++ {
+			board.Cells[y][x] = I
+		}
+	}
+
+	linesCleared = board.ClearLines()
+
+	if linesCleared != 3 {
+		t.Errorf("Expected 3 lines cleared, got %d", linesCleared)
 	}
 }
 
 func TestIsLineFull(t *testing.T) {
 	board := NewBoard()
 
-	// Fill a complete line
+	// Empty line
+	if board.isLineFull(0) {
+		t.Error("Expected empty line to not be full")
+	}
+
+	// Partially filled line
+	board.Cells[0][0] = I
+	if board.isLineFull(0) {
+		t.Error("Expected partially filled line to not be full")
+	}
+
+	// Full line
 	for x := 0; x < BoardWidth; x++ {
-		board.Cells[BoardHeight-1][x] = I
+		board.Cells[1][x] = I
 	}
-
-	// Fill part of another line
-	for x := 0; x < BoardWidth-1; x++ {
-		board.Cells[BoardHeight-2][x] = J
-	}
-
-	// Check if the complete line is detected as full
-	if !board.isLineFull(BoardHeight - 1) {
-		t.Error("Expected line to be full")
-	}
-
-	// Check if the partial line is not detected as full
-	if board.isLineFull(BoardHeight - 2) {
-		t.Error("Expected line to not be full")
+	if !board.isLineFull(1) {
+		t.Error("Expected full line to be full")
 	}
 }

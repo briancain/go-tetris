@@ -47,10 +47,12 @@ jobs:
     - name: Build
       run: go build -v -o bin/tetris ./cmd
 
-    - name: Test
-      env:
-        EBITEN_HEADLESS: "1"
-      run: go test -v -short ./...
+    - name: Install Xvfb
+      run: sudo apt-get install -y xvfb
+
+    - name: Test with Xvfb
+      run: |
+        xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" go test -v ./...
 
     - name: Check formatting
       run: |

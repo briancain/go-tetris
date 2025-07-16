@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	_ "github.com/briancain/go-tetris/internal/testutil" // Import for init side effects
 	"github.com/briancain/go-tetris/internal/tetris"
 )
 
