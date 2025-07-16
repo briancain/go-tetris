@@ -45,7 +45,7 @@ jobs:
         git diff --exit-code go.mod go.sum || (echo "Please run 'go mod tidy' and commit the changes" && exit 1)
 
     - name: Build
-      run: go build -v ./cmd
+      run: go build -v -o bin/tetris ./cmd
 
     - name: Test
       run: go test -v ./...
@@ -55,6 +55,15 @@ jobs:
         if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then
           echo "The following files are not formatted correctly:"
           gofmt -l .
+          exit 1
+        fi
+        
+    - name: Check imports
+      run: |
+        go install golang.org/x/tools/cmd/goimports@latest
+        if [ "$(goimports -l . | wc -l)" -gt 0 ]; then
+          echo "The following files have import formatting issues:"
+          goimports -l .
           exit 1
         fi
 
@@ -81,6 +90,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
+          args: --timeout=5m
 
   cross-platform:
     name: Cross-Platform Build
@@ -124,8 +134,9 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: 0
       run: |
-        output_name="tetris"
+        mkdir -p bin
+        output_name="bin/tetris"
         if [ "${{ matrix.goos }}" = "windows" ]; then
-          output_name="tetris.exe"
+          output_name="bin/tetris.exe"
         fi
         go build -v -o $output_name ./cmd
