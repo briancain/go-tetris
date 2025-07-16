@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/briancain/go-tetris/internal/tetris"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func main() {
