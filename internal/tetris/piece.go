@@ -166,13 +166,6 @@ func NewPiece(pieceType PieceType) *Piece {
 	}
 }
 
-// RandomPiece creates a random tetromino piece
-func RandomPiece() *Piece {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	pieceType := PieceType(r.Intn(7) + 1) // 1-7 for the different piece types
-	return NewPiece(pieceType)
-}
-
 // Rotate rotates the piece clockwise
 func (p *Piece) Rotate() {
 	// Skip rotation for O piece (square)

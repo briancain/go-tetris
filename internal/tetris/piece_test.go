@@ -60,17 +60,19 @@ func TestNewPiece(t *testing.T) {
 	}
 }
 
-func TestRandomPiece(t *testing.T) {
-	// Test that RandomPiece returns a valid piece
+func TestPieceGeneratorRandomness(t *testing.T) {
+	// Test that the piece generator returns valid pieces
+	generator := NewPieceGenerator()
+
 	for i := 0; i < 100; i++ {
-		piece := RandomPiece()
+		piece := generator.NextPiece()
 
 		if piece == nil {
-			t.Fatal("RandomPiece returned nil")
+			t.Fatal("PieceGenerator.NextPiece returned nil")
 		}
 
 		if piece.Type < TypeI || piece.Type > TypeZ {
-			t.Errorf("RandomPiece returned invalid piece type: %d", piece.Type)
+			t.Errorf("PieceGenerator.NextPiece returned invalid piece type: %d", piece.Type)
 		}
 	}
 }
