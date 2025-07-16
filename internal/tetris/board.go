@@ -46,20 +46,26 @@ func (b *Board) Clear() {
 
 // IsValidPosition checks if a piece can be placed at the given position
 func (b *Board) IsValidPosition(piece *Piece, x, y int) bool {
-	for i := 0; i < len(piece.Shape); i++ {
-		for j := 0; j < len(piece.Shape[i]); j++ {
-			if piece.Shape[i][j] {
-				newX, newY := x+j, y+i
+	shape := piece.Shape
+	height := len(shape)
+	width := len(shape[0])
 
-				// Check if out of bounds
-				if newX < 0 || newX >= BoardWidth || newY < 0 || newY >= BoardHeightWithBuffer {
-					return false
-				}
+	for i := 0; i < height; i++ {
+		for j := 0; j < width; j++ {
+			if !shape[i][j] {
+				continue // Skip empty cells in the piece shape
+			}
 
-				// Check if cell is already occupied
-				if b.Cells[newY][newX] != Empty {
-					return false
-				}
+			newX, newY := x+j, y+i
+
+			// Check if out of bounds
+			if newX < 0 || newX >= BoardWidth || newY < 0 || newY >= BoardHeightWithBuffer {
+				return false
+			}
+
+			// Check if cell is already occupied
+			if b.Cells[newY][newX] != Empty {
+				return false
 			}
 		}
 	}
@@ -99,13 +105,29 @@ func (b *Board) PlacePiece(piece *Piece, x, y int, _ bool) {
 // ClearLines removes completed lines and returns the number of lines cleared
 func (b *Board) ClearLines() int {
 	linesCleared := 0
+	destRow := BoardHeightWithBuffer - 1
 
-	// Only check the visible rows (not the buffer rows)
-	for y := BoardHeightWithBuffer - 1; y >= BoardHeightWithBuffer-BoardHeight; y-- {
-		if b.isLineFull(y) {
-			b.clearLine(y)
+	// Process rows from bottom to top
+	for srcRow := BoardHeightWithBuffer - 1; srcRow >= BoardHeightWithBuffer-BoardHeight; srcRow-- {
+		// If the line is full, don't copy it (effectively removing it)
+		if b.isLineFull(srcRow) {
 			linesCleared++
-			y++ // Check the same line again after shifting
+			continue
+		}
+
+		// If we're not at the same row, copy the row down
+		if srcRow != destRow {
+			// Copy the row
+			copy(b.Cells[destRow][:], b.Cells[srcRow][:])
+		}
+
+		destRow--
+	}
+
+	// Clear the top rows
+	for y := 0; y <= destRow; y++ {
+		for x := 0; x < BoardWidth; x++ {
+			b.Cells[y][x] = Empty
 		}
 	}
 
@@ -120,19 +142,4 @@ func (b *Board) isLineFull(y int) bool {
 		}
 	}
 	return true
-}
-
-// clearLine removes a line and shifts all lines above down
-func (b *Board) clearLine(y int) {
-	// Move all lines above down
-	for i := y; i > 0; i-- {
-		for x := 0; x < BoardWidth; x++ {
-			b.Cells[i][x] = b.Cells[i-1][x]
-		}
-	}
-
-	// Clear the top line
-	for x := 0; x < BoardWidth; x++ {
-		b.Cells[0][x] = Empty
-	}
 }

@@ -217,18 +217,17 @@ func (g *Game) HardDrop() {
 		return
 	}
 
-	// Keep moving down until we hit something
-	for {
-		testPiece := g.CurrentPiece.Copy()
-		testPiece.Move(0, 1)
+	// Get the ghost piece Y position
+	ghostY := g.GetGhostPieceY()
 
-		if !g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
-			break
-		}
+	// Calculate how many cells we moved down
+	distance := ghostY - g.CurrentPiece.Y
 
-		g.CurrentPiece.Move(0, 1)
-		g.Score++ // Small bonus for hard drop
-	}
+	// Move the piece to the ghost position
+	g.CurrentPiece.Y = ghostY
+
+	// Add score based on distance
+	g.Score += distance
 
 	g.lockPiece()
 
@@ -447,4 +446,27 @@ func (g *Game) isTSpin() bool {
 
 	// T-spin requires at least 3 corners to be occupied
 	return cornerCount >= 3
+}
+
+// GetGhostPieceY calculates where the current piece would land if dropped
+func (g *Game) GetGhostPieceY() int {
+	if g.CurrentPiece == nil {
+		return 0
+	}
+
+	ghostY := g.CurrentPiece.Y
+	testPiece := g.CurrentPiece.Copy()
+
+	for {
+		testY := ghostY + 1
+		testPiece.Y = testY
+
+		if !g.Board.IsValidPosition(testPiece, testPiece.X, testY) {
+			break
+		}
+
+		ghostY = testY
+	}
+
+	return ghostY
 }

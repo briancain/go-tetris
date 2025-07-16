@@ -209,19 +209,8 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 			}
 		}
 
-		// Draw ghost piece (preview of where the piece will land)
-		ghostY := piece.Y
-		for {
-			testY := ghostY + 1
-			testPiece := piece.Copy()
-			testPiece.Y = testY
-
-			if !r.game.Board.IsValidPosition(testPiece, testPiece.X, testY) {
-				break
-			}
-
-			ghostY = testY
-		}
+		// Get ghost piece position
+		ghostY := r.game.GetGhostPieceY()
 
 		// Only draw ghost if it's different from the current position
 		if ghostY > piece.Y {
@@ -254,6 +243,7 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 
 // drawCell draws a colored cell
 func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
+	// Draw the cell fill
 	vector.DrawFilledRect(
 		screen,
 		float32(x),
@@ -264,8 +254,15 @@ func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
 		false,
 	)
 
-	// Draw cell border
-	borderColor := color.RGBA{0, 0, 0, 255}
+	// Draw cell border (single call with a darker color)
+	borderColor := color.RGBA{
+		R: uint8(float64(clr.R) * 0.7),
+		G: uint8(float64(clr.G) * 0.7),
+		B: uint8(float64(clr.B) * 0.7),
+		A: 255,
+	}
+
+	// Top border
 	vector.DrawFilledRect(
 		screen,
 		float32(x),
@@ -275,6 +272,8 @@ func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
 		borderColor,
 		false,
 	)
+
+	// Left border
 	vector.DrawFilledRect(
 		screen,
 		float32(x),
@@ -284,6 +283,8 @@ func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
 		borderColor,
 		false,
 	)
+
+	// Right border
 	vector.DrawFilledRect(
 		screen,
 		float32(x+CellSize-1),
@@ -293,6 +294,8 @@ func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
 		borderColor,
 		false,
 	)
+
+	// Bottom border
 	vector.DrawFilledRect(
 		screen,
 		float32(x),
@@ -306,18 +309,22 @@ func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
 
 // drawEmptyCell draws an empty cell
 func (r *Renderer) drawEmptyCell(screen *ebiten.Image, x, y int) {
+	// Draw the cell fill
+	cellColor := color.RGBA{40, 40, 40, 255}
 	vector.DrawFilledRect(
 		screen,
 		float32(x),
 		float32(y),
 		float32(CellSize),
 		float32(CellSize),
-		color.RGBA{40, 40, 40, 255},
+		cellColor,
 		false,
 	)
 
 	// Draw cell border
 	borderColor := color.RGBA{20, 20, 20, 255}
+
+	// Top border
 	vector.DrawFilledRect(
 		screen,
 		float32(x),
@@ -327,6 +334,8 @@ func (r *Renderer) drawEmptyCell(screen *ebiten.Image, x, y int) {
 		borderColor,
 		false,
 	)
+
+	// Left border
 	vector.DrawFilledRect(
 		screen,
 		float32(x),
@@ -336,6 +345,8 @@ func (r *Renderer) drawEmptyCell(screen *ebiten.Image, x, y int) {
 		borderColor,
 		false,
 	)
+
+	// Right border
 	vector.DrawFilledRect(
 		screen,
 		float32(x+CellSize-1),
@@ -345,6 +356,8 @@ func (r *Renderer) drawEmptyCell(screen *ebiten.Image, x, y int) {
 		borderColor,
 		false,
 	)
+
+	// Bottom border
 	vector.DrawFilledRect(
 		screen,
 		float32(x),
