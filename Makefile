@@ -1,4 +1,4 @@
-.PHONY: build clean run test test-verbose test-coverage
+.PHONY: build clean run test test-verbose test-coverage mod-tidy mod-tidy-check lint
 
 # Binary name
 BINARY_NAME=tetris
@@ -34,6 +34,20 @@ test-coverage:
 	go test -coverprofile=$(COVERAGE_DIR)/coverage.out ./...
 	go tool cover -html=$(COVERAGE_DIR)/coverage.out -o $(COVERAGE_DIR)/coverage.html
 	@echo "Coverage report generated at $(COVERAGE_DIR)/coverage.html"
+
+# Run go mod tidy
+mod-tidy:
+	go mod tidy
+
+# Check if go mod tidy would make changes
+mod-tidy-check:
+	@echo "Checking if go mod tidy would make changes..."
+	@go mod tidy
+	@echo "No changes needed."
+
+# Run linter
+lint:
+	golangci-lint run
 
 # Default target
 all: build

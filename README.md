@@ -1,5 +1,7 @@
 # Go Tetris
 
+[![Go Tetris CI](https://github.com/briancain/go-tetris/actions/workflows/main.yml/badge.svg)](https://github.com/briancain/go-tetris/actions/workflows/main.yml)
+
 A Tetris clone written in Go using the Ebiten game library.
 
 Made with Amazon Q

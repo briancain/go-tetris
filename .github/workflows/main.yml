@@ -1,0 +1,131 @@
+name: Go Tetris CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        check-latest: true
+
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        # Install required libraries for Ebiten
+        sudo apt-get install -y libgl1-mesa-dev xorg-dev
+
+    - name: Go Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Check go mod tidy
+      run: |
+        go mod tidy
+        git diff --exit-code go.mod go.sum || (echo "Please run 'go mod tidy' and commit the changes" && exit 1)
+
+    - name: Build
+      run: go build -v ./cmd
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Check formatting
+      run: |
+        if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then
+          echo "The following files are not formatted correctly:"
+          gofmt -l .
+          exit 1
+        fi
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          check-latest: true
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          # Install required libraries for Ebiten
+          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
+  cross-platform:
+    name: Cross-Platform Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [windows, darwin]
+        goarch: [amd64]
+        include:
+          - goos: darwin
+            goarch: arm64
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        check-latest: true
+
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        # Install required libraries for Ebiten
+        sudo apt-get install -y libgl1-mesa-dev xorg-dev
+
+    - name: Go Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        output_name="tetris"
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          output_name="tetris.exe"
+        fi
+        go build -v -o $output_name ./cmd

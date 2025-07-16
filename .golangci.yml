@@ -1,0 +1,29 @@
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: github.com/briancain/go-tetris
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+
+run:
+  timeout: 5m
+  tests: true
