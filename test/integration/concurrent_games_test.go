@@ -32,7 +32,7 @@ func TestConcurrentGames(t *testing.T) {
 		wg.Add(1)
 		go func(i int, p *tetris.Game) {
 			defer wg.Done()
-			
+
 			username := fmt.Sprintf("player%d", i+1)
 			err := p.ConnectToServer(username)
 			if err != nil {
@@ -127,7 +127,7 @@ func TestConcurrentGameMoves(t *testing.T) {
 
 	// Send concurrent moves
 	var wg sync.WaitGroup
-	
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

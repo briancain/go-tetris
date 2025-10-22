@@ -594,7 +594,7 @@ func (r *Renderer) drawMultiplayerSetup(screen *ebiten.Image) {
 
 	msg = "[Username input will go here]"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2
+	y = ScreenHeight / 2
 	text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "ENTER to connect | ESC to back"
@@ -612,7 +612,7 @@ func (r *Renderer) drawMatchmaking(screen *ebiten.Image) {
 
 	msg = "Queue position: [X]"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2
+	y = ScreenHeight / 2
 	text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "ESC to cancel"
