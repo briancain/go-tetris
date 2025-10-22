@@ -232,8 +232,6 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 
 		// Only draw ghost if it's different from the current position
 		if ghostY > piece.Y {
-			ghostColor := color.RGBA{pieceColor.R, pieceColor.G, pieceColor.B, 100}
-
 			// Calculate the visual position for the ghost piece
 			visualGhostY := ghostY - (tetris.BoardHeightWithBuffer - tetris.BoardHeight)
 
@@ -242,7 +240,7 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 					if piece.Shape[i][j] && visualGhostY+i >= 0 {
 						x := BoardX + (piece.X+j)*CellSize
 						y := BoardY + (visualGhostY+i)*CellSize
-						r.drawCell(screen, x, y, ghostColor)
+						r.drawGhostCell(screen, x, y, pieceColor)
 					}
 				}
 			}
@@ -323,6 +321,22 @@ func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
 		borderColor,
 		false,
 	)
+}
+
+// drawGhostCell draws a ghost piece cell with proper transparency
+func (r *Renderer) drawGhostCell(screen *ebiten.Image, x, y int, pieceColor color.RGBA) {
+	// Create a small image for the cell
+	cellImg := ebiten.NewImage(CellSize, CellSize)
+
+	// Fill it with the piece color
+	cellImg.Fill(pieceColor)
+
+	// Draw it with transparency
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Translate(float64(x), float64(y))
+	opts.ColorScale.ScaleAlpha(0.3) // 30% opacity
+
+	screen.DrawImage(cellImg, opts)
 }
 
 // drawEmptyCell draws an empty cell
