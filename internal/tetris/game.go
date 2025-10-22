@@ -50,6 +50,7 @@ type Game struct {
 	// UI state
 	UsernameInput    string `json:"usernameInput,omitempty"`
 	ConnectionStatus string `json:"connectionStatus,omitempty"`
+	OpponentName     string `json:"opponentName,omitempty"`
 }
 
 // NewGame creates a new Tetris game
@@ -115,7 +116,7 @@ func (g *Game) Start() {
 
 // Update updates the game state
 func (g *Game) Update() {
-	// Process multiplayer messages
+	// Process multiplayer messages in all states
 	if g.MultiplayerMode {
 		g.ProcessMultiplayerMessages()
 	}
@@ -631,10 +632,11 @@ func (g *Game) handleMatchFound(message map[string]interface{}) {
 
 	opponent, ok := message["opponent"].(string)
 	if ok {
+		g.OpponentName = opponent
 		log.Printf("Game: Matched with opponent: %s", opponent)
 	}
 
-	// Start the game
+	// Start the game - this will change state to StatePlaying
 	g.Start()
 }
 

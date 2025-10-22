@@ -27,6 +27,9 @@ func NewApp(game *Game, renderer interface {
 
 // Update updates the game state
 func (g *App) Update() error {
+	// Always update game state first (for multiplayer message processing)
+	g.game.Update()
+
 	// Handle input based on game state
 	switch g.game.State {
 	case StateMainMenu:
@@ -93,9 +96,6 @@ func (g *App) Update() error {
 		if ebiten.IsKeyPressed(ebiten.KeyDown) {
 			g.game.SoftDrop()
 		}
-
-		// Update game state
-		g.game.Update()
 	case StatePaused:
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 			g.game.TogglePause()

@@ -21,8 +21,8 @@ func TestNewGame(t *testing.T) {
 		t.Error("PieceGenerator is nil")
 	}
 
-	if game.State != StateMenu {
-		t.Errorf("Expected initial state to be StateMenu, got %d", game.State)
+	if game.State != StateMainMenu {
+		t.Errorf("Expected initial state to be StateMainMenu, got %d", game.State)
 	}
 
 	if game.Score != 0 {

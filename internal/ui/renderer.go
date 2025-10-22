@@ -479,13 +479,19 @@ func (r *Renderer) drawHeldPiece(screen *ebiten.Image) {
 
 // drawGameStats draws the game statistics
 func (r *Renderer) drawGameStats(screen *ebiten.Image) {
+	// Calculate box height based on multiplayer mode
+	boxHeight := float32(160) // Default height
+	if r.game.MultiplayerMode {
+		boxHeight = 240 // Taller for player names
+	}
+
 	// Draw stats box with border
 	vector.DrawFilledRect(
 		screen,
 		float32(PreviewX-12),
 		float32(PreviewY+78),
 		124,
-		164, // Increased height to accommodate more stats
+		boxHeight+4, // Border height
 		color.RGBA{100, 100, 100, 255},
 		false,
 	)
@@ -495,31 +501,50 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 		float32(PreviewX-10),
 		float32(PreviewY+80),
 		120,
-		160, // Increased height to accommodate more stats
+		boxHeight, // Inner box height
 		color.RGBA{60, 60, 60, 255},
 		false,
 	)
 
+	// Show player names in multiplayer mode
+	if r.game.MultiplayerMode {
+		// Your name (top)
+		yourName := r.game.UsernameInput
+		if yourName == "" {
+			yourName = "You"
+		}
+		text.Draw(screen, "You:", r.font, PreviewX-5, PreviewY+95, color.RGBA{255, 255, 0, 255}) // Yellow
+		text.Draw(screen, yourName, r.font, PreviewX+5, PreviewY+110, color.RGBA{255, 255, 0, 255})
+
+		// Opponent name
+		opponentName := r.game.OpponentName
+		if opponentName == "" {
+			opponentName = "Opponent"
+		}
+		text.Draw(screen, "Opponent:", r.font, PreviewX-5, PreviewY+130, color.RGBA{255, 100, 100, 255}) // Light red
+		text.Draw(screen, opponentName, r.font, PreviewX+5, PreviewY+145, color.RGBA{255, 100, 100, 255})
+	}
+
 	// Draw score
-	text.Draw(screen, "Score:", r.font, PreviewX-5, PreviewY+100, color.White)                             // nolint:staticcheck // Using deprecated API for compatibility
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetScore()), r.font, PreviewX+5, PreviewY+120, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, "Score:", r.font, PreviewX-5, PreviewY+170, color.White)                             // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetScore()), r.font, PreviewX+5, PreviewY+190, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw level
-	text.Draw(screen, "Level:", r.font, PreviewX-5, PreviewY+140, color.White)                             // nolint:staticcheck // Using deprecated API for compatibility
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLevel()), r.font, PreviewX+5, PreviewY+160, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, "Level:", r.font, PreviewX-5, PreviewY+210, color.White)                             // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLevel()), r.font, PreviewX+5, PreviewY+230, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw lines cleared
-	text.Draw(screen, "Lines:", r.font, PreviewX-5, PreviewY+180, color.White)                                    // nolint:staticcheck // Using deprecated API for compatibility
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, PreviewY+200, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, "Lines:", r.font, PreviewX-5, PreviewY+250, color.White)                                    // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, PreviewY+270, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw Back-to-Back status
 	if r.game.GetBackToBack() {
-		text.Draw(screen, "Back-to-Back", r.font, PreviewX-5, PreviewY+220, color.RGBA{255, 215, 0, 255}) // Gold color
+		text.Draw(screen, "Back-to-Back", r.font, PreviewX-5, PreviewY+290, color.RGBA{255, 215, 0, 255}) // Gold color
 	}
 
 	// Draw last clear type
 	if r.game.GetLastClearWasTSpin() {
-		text.Draw(screen, "T-Spin!", r.font, PreviewX-5, PreviewY+240, color.RGBA{255, 105, 180, 255}) // Hot pink
+		text.Draw(screen, "T-Spin!", r.font, PreviewX-5, PreviewY+310, color.RGBA{255, 105, 180, 255}) // Hot pink
 	}
 }
 
@@ -636,10 +661,18 @@ func (r *Renderer) drawMatchmaking(screen *ebiten.Image) {
 	y := ScreenHeight / 3
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
-	msg = "Queue position: [X]"
-	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight / 2
-	text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // nolint:staticcheck // Using deprecated API for compatibility
+	// Show connection status if available
+	if r.game.ConnectionStatus != "" {
+		status := r.game.ConnectionStatus
+		x = (ScreenWidth - len(status)*7) / 2
+		y = ScreenHeight / 2
+		text.Draw(screen, status, r.font, x, y, color.RGBA{255, 255, 0, 255}) // Yellow text
+	} else {
+		msg = "Waiting for opponent..."
+		x = (ScreenWidth - len(msg)*7) / 2
+		y = ScreenHeight / 2
+		text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // Gray text
+	}
 
 	msg = "ESC to cancel"
 	x = (ScreenWidth - len(msg)*7) / 2
