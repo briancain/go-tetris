@@ -26,7 +26,7 @@ func TestGetLeaderboard_FiltersPlayersWithNoGames(t *testing.T) {
 	}
 
 	playerWithoutGames := &models.Player{
-		ID:         "player2", 
+		ID:         "player2",
 		Username:   "JustLoggedIn",
 		TotalGames: 0, // No games played
 		Wins:       0,
@@ -36,7 +36,7 @@ func TestGetLeaderboard_FiltersPlayersWithNoGames(t *testing.T) {
 
 	anotherPlayerWithGames := &models.Player{
 		ID:         "player3",
-		Username:   "AlsoPlayed", 
+		Username:   "AlsoPlayed",
 		TotalGames: 2,
 		Wins:       1,
 		Losses:     1,
@@ -71,7 +71,7 @@ func TestGetLeaderboard_FiltersPlayersWithNoGames(t *testing.T) {
 
 	// Should be sorted by high score (descending)
 	if leaderboard[0].Username != "HasPlayed" || leaderboard[0].HighScore != 1500 {
-		t.Errorf("Expected first player to be HasPlayed with score 1500, got %s with %d", 
+		t.Errorf("Expected first player to be HasPlayed with score 1500, got %s with %d",
 			leaderboard[0].Username, leaderboard[0].HighScore)
 	}
 
@@ -103,7 +103,7 @@ func TestGetLeaderboard_EmptyWhenNoPlayersHaveGames(t *testing.T) {
 
 	player2 := &models.Player{
 		ID:         "player2",
-		Username:   "NoGames2", 
+		Username:   "NoGames2",
 		TotalGames: 0,
 		HighScore:  0,
 	}
