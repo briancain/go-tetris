@@ -227,8 +227,8 @@ func (gm *GameManager) finalizeGame(game *models.GameSession, winnerID string) {
 	// Clear player game IDs
 	game.Player1.GameID = ""
 	game.Player2.GameID = ""
-	gm.playerStore.UpdatePlayer(game.Player1)
-	gm.playerStore.UpdatePlayer(game.Player2)
+	_ = gm.playerStore.UpdatePlayer(game.Player1)
+	_ = gm.playerStore.UpdatePlayer(game.Player2)
 
 	// Send final game over message
 	gameOverMsg := map[string]interface{}{
@@ -321,8 +321,8 @@ func (gm *GameManager) startRematch(oldGame *models.GameSession) {
 	// Update player game IDs
 	newGame.Player1.GameID = newGame.ID
 	newGame.Player2.GameID = newGame.ID
-	gm.playerStore.UpdatePlayer(newGame.Player1)
-	gm.playerStore.UpdatePlayer(newGame.Player2)
+	_ = gm.playerStore.UpdatePlayer(newGame.Player1)
+	_ = gm.playerStore.UpdatePlayer(newGame.Player2)
 
 	// Store new game
 	err := gm.gameStore.CreateGame(newGame)
@@ -393,7 +393,7 @@ func (gm *GameManager) updatePlayerStats(game *models.GameSession, winnerID stri
 	} else if winnerID != "" { // Only count as loss if there was a winner (not a draw)
 		game.Player1.Losses++
 	}
-	gm.playerStore.UpdatePlayer(game.Player1)
+	_ = gm.playerStore.UpdatePlayer(game.Player1)
 
 	// Update Player 2 stats
 	game.Player2.TotalGames++
@@ -405,7 +405,7 @@ func (gm *GameManager) updatePlayerStats(game *models.GameSession, winnerID stri
 	} else if winnerID != "" { // Only count as loss if there was a winner (not a draw)
 		game.Player2.Losses++
 	}
-	gm.playerStore.UpdatePlayer(game.Player2)
+	_ = gm.playerStore.UpdatePlayer(game.Player2)
 
 	log.Printf("Updated stats for players %s and %s", game.Player1.Username, game.Player2.Username)
 }
@@ -424,6 +424,6 @@ func (gm *GameManager) sendToPlayer(playerID string, message map[string]interfac
 // generateGameID creates a unique game ID
 func generateGameID() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes)
 	return hex.EncodeToString(bytes)
 }

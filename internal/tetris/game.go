@@ -811,7 +811,7 @@ func (g *Game) handlePlayerLost(message map[string]interface{}) {
 // sendMoveToServer sends a move to the server
 func (g *Game) sendMoveToServer(moveType string) {
 	if g.MultiplayerClient != nil && g.MultiplayerClient.IsConnected() {
-		g.MultiplayerClient.SendGameMove(moveType)
+		_ = g.MultiplayerClient.SendGameMove(moveType)
 	}
 }
 

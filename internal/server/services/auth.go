@@ -56,13 +56,13 @@ func (s *AuthService) Logout(playerID string) error {
 // generateID creates a unique identifier
 func generateID() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes)
 	return hex.EncodeToString(bytes)
 }
 
 // generateSessionToken creates a session token
 func generateSessionToken() string {
 	bytes := make([]byte, 32)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes)
 	return hex.EncodeToString(bytes)
 }

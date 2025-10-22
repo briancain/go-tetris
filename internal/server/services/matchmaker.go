@@ -109,8 +109,8 @@ func (s *MatchmakingService) tryMatchmaking() {
 	}
 
 	// Remove from queue
-	s.queueStore.RemoveFromQueue(player1ID)
-	s.queueStore.RemoveFromQueue(player2ID)
+	_ = s.queueStore.RemoveFromQueue(player1ID)
+	_ = s.queueStore.RemoveFromQueue(player2ID)
 
 	// Create game session
 	gameID := generateID()
@@ -129,8 +129,8 @@ func (s *MatchmakingService) tryMatchmaking() {
 	err = s.gameStore.CreateGame(game)
 	if err != nil {
 		// Re-add players to queue on error
-		s.queueStore.AddToQueue(player1ID)
-		s.queueStore.AddToQueue(player2ID)
+		_ = s.queueStore.AddToQueue(player1ID)
+		_ = s.queueStore.AddToQueue(player2ID)
 		return
 	}
 
@@ -140,8 +140,8 @@ func (s *MatchmakingService) tryMatchmaking() {
 	player2.InQueue = false
 	player2.GameID = gameID
 
-	s.playerStore.UpdatePlayer(player1)
-	s.playerStore.UpdatePlayer(player2)
+	_ = s.playerStore.UpdatePlayer(player1)
+	_ = s.playerStore.UpdatePlayer(player2)
 
 	// Notify game manager
 	s.gameManager.StartGame(game)
