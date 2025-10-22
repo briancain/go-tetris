@@ -72,7 +72,7 @@ func (h *LeaderboardHandler) GetLeaderboard(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(leaderboard)
+	_ = json.NewEncoder(w).Encode(leaderboard)
 }
 
 // LeaderboardEntry represents a leaderboard entry

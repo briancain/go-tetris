@@ -829,7 +829,7 @@ func (g *Game) RequestRematch() {
 	}
 
 	if g.MultiplayerClient.IsConnected() {
-		g.MultiplayerClient.sendMessage(message)
+		_ = g.MultiplayerClient.sendMessage(message)
 	}
 
 	log.Printf("Game: Rematch requested")
@@ -899,7 +899,7 @@ func (g *Game) sendStateToServer() {
 			board[i] = make([]Cell, len(row))
 			copy(board[i], row[:])
 		}
-		g.MultiplayerClient.SendGameState(board, g.Score, g.Level, g.LinesCleared)
+		_ = g.MultiplayerClient.SendGameState(board, g.Score, g.Level, g.LinesCleared)
 	}
 }
 
