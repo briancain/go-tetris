@@ -116,6 +116,16 @@ func (gm *GameManager) HandleGameState(playerID string, state *models.GameState)
 		return nil // Invalid player for this game
 	}
 
+	// Update player's score in game session
+	if game.Player1.ID == playerID {
+		game.Player1Score = state.Score
+	} else {
+		game.Player2Score = state.Score
+	}
+
+	// Check if surviving player has won by score
+	gm.checkScoreWin(game)
+
 	// Broadcast state to opponent
 	var opponentID string
 	if game.Player1.ID == playerID {
@@ -141,18 +151,73 @@ func (gm *GameManager) HandleGameState(playerID string, state *models.GameState)
 	return nil
 }
 
-// EndGame handles game completion
-func (gm *GameManager) EndGame(gameID, winnerID string) error {
+// EndGame handles when a player loses
+func (gm *GameManager) EndGame(gameID, loserID string) error {
 	game, err := gm.gameStore.GetGame(gameID)
 	if err != nil {
 		return err
 	}
 
-	// Update game status
-	game.Status = models.GameStatusFinished
+	// Mark player as lost and get their final score
+	var loserScore int
+	if game.Player1.ID == loserID {
+		game.Player1Lost = true
+		loserScore = game.Player1Score
+	} else if game.Player2.ID == loserID {
+		game.Player2Lost = true
+		loserScore = game.Player2Score
+	}
+
+	// Update game in storage
 	err = gm.gameStore.UpdateGame(game)
 	if err != nil {
 		return err
+	}
+
+	// Send player lost message
+	playerLostMsg := map[string]interface{}{
+		"type":       "player_lost",
+		"gameId":     gameID,
+		"playerId":   loserID,
+		"loserScore": loserScore,
+	}
+
+	gm.sendToPlayer(game.Player1.ID, playerLostMsg)
+	gm.sendToPlayer(game.Player2.ID, playerLostMsg)
+
+	// Check if both players lost
+	if game.Player1Lost && game.Player2Lost {
+		gm.finalizeGame(game, "")
+	}
+
+	log.Printf("Player %s lost in game %s (score: %d)", loserID, gameID, loserScore)
+	return nil
+}
+
+// checkScoreWin checks if surviving player has won by achieving higher score
+func (gm *GameManager) checkScoreWin(game *models.GameSession) {
+	// Only check if exactly one player has lost
+	if game.Player1Lost && !game.Player2Lost {
+		// Player 1 lost, check if Player 2 has beaten their score
+		if game.Player2Score > game.Player1Score {
+			gm.finalizeGame(game, game.Player2.ID)
+		}
+	} else if game.Player2Lost && !game.Player1Lost {
+		// Player 2 lost, check if Player 1 has beaten their score
+		if game.Player1Score > game.Player2Score {
+			gm.finalizeGame(game, game.Player1.ID)
+		}
+	}
+}
+
+// finalizeGame ends the game with final results
+func (gm *GameManager) finalizeGame(game *models.GameSession, winnerID string) {
+	// Update game status
+	game.Status = models.GameStatusFinished
+	err := gm.gameStore.UpdateGame(game)
+	if err != nil {
+		log.Printf("Failed to update game status: %v", err)
+		return
 	}
 
 	// Clear player game IDs
@@ -161,19 +226,21 @@ func (gm *GameManager) EndGame(gameID, winnerID string) error {
 	gm.playerStore.UpdatePlayer(game.Player1)
 	gm.playerStore.UpdatePlayer(game.Player2)
 
-	// Send game over message
+	// Send final game over message
 	gameOverMsg := map[string]interface{}{
-		"type":     "game_over",
-		"gameId":   gameID,
-		"winnerId": winnerID,
+		"type":         "game_over",
+		"gameId":       game.ID,
+		"winnerId":     winnerID,
+		"final":        true,
+		"player1Score": game.Player1Score,
+		"player2Score": game.Player2Score,
 	}
 
 	gm.sendToPlayer(game.Player1.ID, gameOverMsg)
 	gm.sendToPlayer(game.Player2.ID, gameOverMsg)
 
-	log.Printf("Game %s ended, winner: %s", gameID, winnerID)
-
-	return nil
+	log.Printf("Game %s finalized, winner: %s (P1: %d, P2: %d)",
+		game.ID, winnerID, game.Player1Score, game.Player2Score)
 }
 
 // sendToPlayer sends a message to a specific player via WebSocket

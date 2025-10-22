@@ -205,6 +205,20 @@ func (mc *MultiplayerClient) GetGameID() string {
 	return mc.gameID
 }
 
+// SendGameOver sends a game over message to the server
+func (mc *MultiplayerClient) SendGameOver() error {
+	if !mc.connected {
+		return nil // Silently ignore if not connected
+	}
+
+	message := map[string]interface{}{
+		"type":   "game_over",
+		"gameId": mc.gameID,
+	}
+
+	return mc.sendMessage(message)
+}
+
 // GetUsername returns the username
 func (mc *MultiplayerClient) GetUsername() string {
 	return mc.username

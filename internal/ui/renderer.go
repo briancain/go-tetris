@@ -482,7 +482,7 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 	// Calculate box height based on multiplayer mode
 	boxHeight := float32(160) // Default height
 	if r.game.MultiplayerMode {
-		boxHeight = 240 // Taller for player names
+		boxHeight = 280 // Taller for player names and status
 	}
 
 	// Draw stats box with border
@@ -513,38 +513,67 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 		if yourName == "" {
 			yourName = "You"
 		}
-		text.Draw(screen, "You:", r.font, PreviewX-5, PreviewY+95, color.RGBA{255, 255, 0, 255}) // Yellow
-		text.Draw(screen, yourName, r.font, PreviewX+5, PreviewY+110, color.RGBA{255, 255, 0, 255})
+		yourColor := color.RGBA{255, 255, 0, 255} // Yellow
+		if r.game.LocalPlayerLost {
+			yourColor = color.RGBA{128, 128, 128, 255} // Gray if lost
+		}
+		text.Draw(screen, "You:", r.font, PreviewX-5, PreviewY+95, yourColor)
+		text.Draw(screen, yourName, r.font, PreviewX+5, PreviewY+110, yourColor)
+		if r.game.LocalPlayerLost {
+			text.Draw(screen, "(LOST)", r.font, PreviewX+5, PreviewY+125, color.RGBA{255, 0, 0, 255}) // Red
+		}
 
 		// Opponent name
 		opponentName := r.game.OpponentName
 		if opponentName == "" {
 			opponentName = "Opponent"
 		}
-		text.Draw(screen, "Opponent:", r.font, PreviewX-5, PreviewY+130, color.RGBA{255, 100, 100, 255}) // Light red
-		text.Draw(screen, opponentName, r.font, PreviewX+5, PreviewY+145, color.RGBA{255, 100, 100, 255})
+		opponentColor := color.RGBA{255, 100, 100, 255} // Light red
+		if r.game.OpponentLost {
+			opponentColor = color.RGBA{128, 128, 128, 255} // Gray if lost
+		}
+		text.Draw(screen, "Opponent:", r.font, PreviewX-5, PreviewY+145, opponentColor)
+		text.Draw(screen, opponentName, r.font, PreviewX+5, PreviewY+160, opponentColor)
+		if r.game.OpponentLost {
+			text.Draw(screen, "(LOST)", r.font, PreviewX+5, PreviewY+175, color.RGBA{255, 0, 0, 255}) // Red
+		}
+
+		// Show target score if someone lost
+		if (r.game.LocalPlayerLost || r.game.OpponentLost) && r.game.LoserScore > 0 {
+			text.Draw(screen, "Beat Score:", r.font, PreviewX-5, PreviewY+190, color.RGBA{255, 215, 0, 255}) // Gold
+			text.Draw(screen, fmt.Sprintf("%d", r.game.LoserScore), r.font, PreviewX+5, PreviewY+205, color.RGBA{255, 215, 0, 255})
+		}
 	}
 
 	// Draw score
-	text.Draw(screen, "Score:", r.font, PreviewX-5, PreviewY+170, color.White)                             // nolint:staticcheck // Using deprecated API for compatibility
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetScore()), r.font, PreviewX+5, PreviewY+190, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+	scoreY := PreviewY + 190
+	if r.game.MultiplayerMode {
+		scoreY = PreviewY + 220 // Adjust for player status and target score
+		if (r.game.LocalPlayerLost || r.game.OpponentLost) && r.game.LoserScore > 0 {
+			scoreY = PreviewY + 240 // Extra space for target score
+		}
+	}
+	text.Draw(screen, "Score:", r.font, PreviewX-5, scoreY, color.White)                                // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetScore()), r.font, PreviewX+5, scoreY+20, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw level
-	text.Draw(screen, "Level:", r.font, PreviewX-5, PreviewY+210, color.White)                             // nolint:staticcheck // Using deprecated API for compatibility
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLevel()), r.font, PreviewX+5, PreviewY+230, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+	levelY := scoreY + 40
+	text.Draw(screen, "Level:", r.font, PreviewX-5, levelY, color.White)                                // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLevel()), r.font, PreviewX+5, levelY+20, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw lines cleared
-	text.Draw(screen, "Lines:", r.font, PreviewX-5, PreviewY+250, color.White)                                    // nolint:staticcheck // Using deprecated API for compatibility
-	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, PreviewY+270, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+	linesY := levelY + 40
+	text.Draw(screen, "Lines:", r.font, PreviewX-5, linesY, color.White)                                       // nolint:staticcheck // Using deprecated API for compatibility
+	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, linesY+20, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw Back-to-Back status
 	if r.game.GetBackToBack() {
-		text.Draw(screen, "Back-to-Back", r.font, PreviewX-5, PreviewY+290, color.RGBA{255, 215, 0, 255}) // Gold color
+		text.Draw(screen, "Back-to-Back", r.font, PreviewX-5, linesY+40, color.RGBA{255, 215, 0, 255}) // Gold color
 	}
 
 	// Draw last clear type
 	if r.game.GetLastClearWasTSpin() {
-		text.Draw(screen, "T-Spin!", r.font, PreviewX-5, PreviewY+310, color.RGBA{255, 105, 180, 255}) // Hot pink
+		text.Draw(screen, "T-Spin!", r.font, PreviewX-5, linesY+60, color.RGBA{255, 105, 180, 255}) // Hot pink
 	}
 }
 
@@ -586,10 +615,25 @@ func (r *Renderer) drawGameOverOverlay(screen *ebiten.Image) {
 		false,
 	)
 
-	// Game over text
-	msg := "GAME OVER"
+	var msg string
+	y := ScreenHeight/2 - 60
+
+	// Show different messages based on multiplayer state
+	if r.game.MultiplayerMode {
+		if r.game.LocalPlayerLost && !r.game.OpponentLost {
+			msg = "YOU LOST"
+		} else if r.game.OpponentLost && !r.game.LocalPlayerLost {
+			msg = "YOU WON!"
+		} else if r.game.LocalPlayerLost && r.game.OpponentLost {
+			msg = "BOTH LOST"
+		} else {
+			msg = "GAME OVER"
+		}
+	} else {
+		msg = "GAME OVER"
+	}
+
 	x := (ScreenWidth - len(msg)*7) / 2
-	y := ScreenHeight/2 - 30
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Final score

@@ -298,3 +298,124 @@ func TestSRSWallKicks(t *testing.T) {
 		t.Error("Expected wall kick to allow rotation for T piece")
 	}
 }
+
+func TestMultiplayerGameOver(t *testing.T) {
+	game := NewGame()
+	game.Start()
+
+	// Test single player game over (should end immediately)
+	game.MultiplayerMode = false
+	game.MultiplayerClient = nil
+	game.handleLocalGameOver()
+	if game.State != StateGameOver {
+		t.Error("Single player game should end immediately on game over")
+	}
+
+	// Reset for multiplayer test
+	game.MultiplayerMode = true
+	game.MultiplayerClient = &MultiplayerClient{connected: true} // Connected but will fail silently
+	game.State = StatePlaying
+
+	// Test multiplayer game over (should not end immediately)
+	game.handleLocalGameOver()
+	if game.State == StateGameOver {
+		t.Error("Multiplayer game should not end immediately when local player loses")
+	}
+
+	// Test with no client (should behave like single player)
+	game.MultiplayerClient = nil
+	game.State = StatePlaying
+	game.handleLocalGameOver()
+	if game.State != StateGameOver {
+		t.Error("Should end immediately when no multiplayer client")
+	}
+}
+
+func TestHandlePlayerLost(t *testing.T) {
+	game := NewGame()
+	game.MultiplayerMode = true
+	game.MultiplayerClient = &MultiplayerClient{playerID: "player1"}
+
+	// Test when local player loses
+	message := map[string]interface{}{
+		"playerId":   "player1",
+		"loserScore": float64(1500),
+	}
+	game.handlePlayerLost(message)
+
+	if !game.LocalPlayerLost {
+		t.Error("LocalPlayerLost should be true when local player loses")
+	}
+	if game.LoserScore != 1500 {
+		t.Errorf("Expected LoserScore to be 1500, got %d", game.LoserScore)
+	}
+
+	// Reset
+	game.LocalPlayerLost = false
+	game.OpponentLost = false
+	game.LoserScore = 0
+
+	// Test when opponent loses
+	message["playerId"] = "player2"
+	message["loserScore"] = float64(2000)
+	game.handlePlayerLost(message)
+
+	if !game.OpponentLost {
+		t.Error("OpponentLost should be true when opponent loses")
+	}
+	if game.LocalPlayerLost {
+		t.Error("LocalPlayerLost should remain false when opponent loses")
+	}
+	if game.LoserScore != 2000 {
+		t.Errorf("Expected LoserScore to be 2000, got %d", game.LoserScore)
+	}
+}
+
+func TestHandleGameOver(t *testing.T) {
+	game := NewGame()
+	game.State = StatePlaying
+
+	// Test game over with winner
+	message := map[string]interface{}{
+		"winnerId": "player1",
+		"final":    true,
+	}
+	game.handleGameOver(message)
+
+	if game.State != StateGameOver {
+		t.Error("Game state should be StateGameOver after final game over")
+	}
+
+	// Test game over without winner (draw)
+	game.State = StatePlaying
+	message = map[string]interface{}{
+		"final": true,
+	}
+	game.handleGameOver(message)
+
+	if game.State != StateGameOver {
+		t.Error("Game state should be StateGameOver even without winner")
+	}
+}
+
+func TestGameStartResetsMultiplayerFlags(t *testing.T) {
+	game := NewGame()
+
+	// Set multiplayer flags
+	game.LocalPlayerLost = true
+	game.OpponentLost = true
+	game.LoserScore = 1000
+
+	// Start new game
+	game.Start()
+
+	if game.LocalPlayerLost {
+		t.Error("LocalPlayerLost should be reset to false on game start")
+	}
+	if game.OpponentLost {
+		t.Error("OpponentLost should be reset to false on game start")
+	}
+	if game.LoserScore != 0 {
+		t.Error("LoserScore should be reset to 0 on game start")
+	}
+}

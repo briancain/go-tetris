@@ -14,12 +14,16 @@ type Player struct {
 
 // GameSession represents an active game between two players
 type GameSession struct {
-	ID        string     `json:"id"`
-	Player1   *Player    `json:"player1"`
-	Player2   *Player    `json:"player2"`
-	Seed      int64      `json:"seed"`
-	Status    GameStatus `json:"status"`
-	CreatedAt time.Time  `json:"createdAt"`
+	ID           string     `json:"id"`
+	Player1      *Player    `json:"player1"`
+	Player2      *Player    `json:"player2"`
+	Player1Lost  bool       `json:"player1Lost"`
+	Player2Lost  bool       `json:"player2Lost"`
+	Player1Score int        `json:"player1Score"`
+	Player2Score int        `json:"player2Score"`
+	Seed         int64      `json:"seed"`
+	Status       GameStatus `json:"status"`
+	CreatedAt    time.Time  `json:"createdAt"`
 }
 
 // GameStatus represents the current state of a game

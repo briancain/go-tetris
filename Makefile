@@ -72,11 +72,11 @@ run-server: build-server
 
 # Run all tests
 test:
-	go test ./...
+	go test ./... -count=1
 
 # Run server tests only
 test-server:
-	go test ./internal/server/...
+	go test ./internal/server/... -count=1
 
 # Run integration tests (requires server to be running)
 test-integration:

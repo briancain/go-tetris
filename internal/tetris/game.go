@@ -46,6 +46,9 @@ type Game struct {
 	OpponentScore     int                `json:"opponentScore,omitempty"`
 	OpponentLevel     int                `json:"opponentLevel,omitempty"`
 	OpponentLines     int                `json:"opponentLines,omitempty"`
+	LocalPlayerLost   bool               `json:"localPlayerLost,omitempty"`
+	OpponentLost      bool               `json:"opponentLost,omitempty"`
+	LoserScore        int                `json:"loserScore,omitempty"`
 
 	// UI state
 	UsernameInput    string `json:"usernameInput,omitempty"`
@@ -111,6 +114,9 @@ func (g *Game) Start() {
 	g.DropTimer = time.Now()
 	g.BackToBack = false
 	g.LastClearWasTSpin = false
+	g.LocalPlayerLost = false
+	g.OpponentLost = false
+	g.LoserScore = 0
 	g.updateDropInterval()
 }
 
@@ -330,10 +336,33 @@ func (g *Game) lockPiece() {
 				pieceY := g.CurrentPiece.Y + i
 				// If any part of the piece is in the hidden area (rows 0-1), game over
 				if pieceY < 2 {
-					g.State = StateGameOver
+					g.handleLocalGameOver()
 					return
 				}
 			}
+		}
+	}
+}
+
+// handleLocalGameOver handles when the local player loses
+func (g *Game) handleLocalGameOver() {
+	if g.MultiplayerMode && g.MultiplayerClient != nil && g.MultiplayerClient.IsConnected() {
+		// In multiplayer, notify server that we lost
+		log.Printf("Game: Local player lost, notifying server")
+		g.sendGameOverToServer()
+		// Don't set StateGameOver yet - wait for server to end the match
+	} else {
+		// In single player, end immediately
+		g.State = StateGameOver
+	}
+}
+
+// sendGameOverToServer notifies the server that this player lost
+func (g *Game) sendGameOverToServer() {
+	if g.MultiplayerClient != nil && g.MultiplayerClient.IsConnected() {
+		err := g.MultiplayerClient.SendGameOver()
+		if err != nil {
+			log.Printf("Failed to send game over message: %v", err)
 		}
 	}
 }
@@ -617,6 +646,8 @@ func (g *Game) handleMultiplayerMessage(message map[string]interface{}) {
 		g.handleOpponentState(message)
 	case "game_over":
 		g.handleGameOver(message)
+	case "player_lost":
+		g.handlePlayerLost(message)
 	}
 }
 
@@ -695,6 +726,29 @@ func (g *Game) handleGameOver(message map[string]interface{}) {
 
 	// End the game
 	g.State = StateGameOver
+}
+
+// handlePlayerLost processes when a player loses but game continues
+func (g *Game) handlePlayerLost(message map[string]interface{}) {
+	playerID, ok := message["playerId"].(string)
+	if !ok {
+		return
+	}
+
+	// Get loser's score
+	if loserScore, ok := message["loserScore"].(float64); ok {
+		g.LoserScore = int(loserScore)
+	}
+
+	if g.MultiplayerClient != nil && playerID == g.MultiplayerClient.playerID {
+		// We lost - enter spectator mode but don't end game yet
+		g.LocalPlayerLost = true
+		log.Printf("Game: Local player lost (score: %d), waiting for opponent to beat score", g.LoserScore)
+	} else {
+		// Opponent lost - we continue playing until we beat their score
+		g.OpponentLost = true
+		log.Printf("Game: Opponent lost (score: %d), continue playing to beat their score", g.LoserScore)
+	}
 }
 
 // sendMoveToServer sends a move to the server
