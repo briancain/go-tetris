@@ -66,3 +66,12 @@ func (g *Game) GetBackToBack() bool {
 func (g *Game) GetLastClearWasTSpin() bool {
 	return g.LastClearWasTSpin
 }
+
+// SetSeed sets a new random seed for the piece generator
+func (g *Game) SetSeed(seed int64) {
+	g.PieceGen = NewPieceGeneratorWithSeed(seed)
+	// If game is in progress, update the next piece
+	if g.State == StatePlaying {
+		g.NextPiece = g.PieceGen.NextPiece()
+	}
+}

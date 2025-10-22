@@ -235,6 +235,15 @@ func NewPieceGenerator() *PieceGenerator {
 	return generator
 }
 
+// NewPieceGeneratorWithSeed creates a new piece generator with a specific seed
+func NewPieceGeneratorWithSeed(seed int64) *PieceGenerator {
+	generator := &PieceGenerator{
+		rng: rand.New(rand.NewSource(seed)),
+	}
+	generator.refillBag()
+	return generator
+}
+
 // refillBag creates a new shuffled bag of all 7 piece types
 func (pg *PieceGenerator) refillBag() {
 	// Create a bag with all 7 piece types

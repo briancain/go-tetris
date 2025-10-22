@@ -58,6 +58,28 @@ func NewGame() *Game {
 	return game
 }
 
+// NewGameWithSeed creates a new Tetris game with a specific random seed
+func NewGameWithSeed(seed int64) *Game {
+	game := &Game{
+		Board:             NewBoard(),
+		State:             StateMenu,
+		Score:             0,
+		Level:             1,
+		LinesCleared:      0,
+		DropInterval:      800 * time.Millisecond,          // Initial drop speed
+		InputDelay:        100 * time.Millisecond,          // Delay between input actions
+		FastDropDelay:     50 * time.Millisecond,           // Fast drop speed
+		PieceGen:          NewPieceGeneratorWithSeed(seed), // Initialize with seed
+		BackToBack:        false,
+		LastClearWasTSpin: false,
+	}
+
+	// Initialize pieces
+	game.NextPiece = game.PieceGen.NextPiece()
+
+	return game
+}
+
 // Start begins a new game
 func (g *Game) Start() {
 	g.Board.Clear()
