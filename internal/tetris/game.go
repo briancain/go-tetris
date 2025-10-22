@@ -676,6 +676,8 @@ func (g *Game) handleMultiplayerMessage(message map[string]interface{}) {
 		g.handleRematchRequest(message)
 	case "rematch_start":
 		g.handleRematchStart(message)
+	case "opponent_disconnected":
+		g.handleOpponentDisconnected(message)
 	}
 }
 
@@ -823,6 +825,12 @@ func (g *Game) handleRematchStart(message map[string]interface{}) {
 	// Reset game state for rematch
 	g.Start()
 	log.Printf("Game: Rematch started")
+}
+
+// handleOpponentDisconnected processes opponent disconnect message
+func (g *Game) handleOpponentDisconnected(message map[string]interface{}) {
+	log.Printf("Game: Opponent disconnected - You win!")
+	g.State = StateGameOver
 }
 
 // sendStateToServer sends current game state to server

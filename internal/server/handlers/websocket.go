@@ -71,6 +71,7 @@ func (h *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Reques
 // handleMessages processes incoming WebSocket messages
 func (h *WebSocketHandler) handleMessages(playerID string, conn *websocket.Conn) {
 	defer func() {
+		h.handlePlayerDisconnect(playerID)
 		h.wsManager.RemoveConnection(playerID)
 		conn.Close()
 	}()
@@ -202,4 +203,15 @@ func (h *WebSocketHandler) handlePing(playerID string) {
 
 	data, _ := json.Marshal(pongMsg)
 	h.wsManager.SendToPlayer(playerID, data)
+}
+
+// handlePlayerDisconnect handles when a player disconnects
+func (h *WebSocketHandler) handlePlayerDisconnect(playerID string) {
+	log.Printf("Player %s disconnected", playerID)
+
+	// Notify game manager of disconnect
+	err := h.gameManager.HandlePlayerDisconnect(playerID)
+	if err != nil {
+		log.Printf("Failed to handle player disconnect: %v", err)
+	}
 }

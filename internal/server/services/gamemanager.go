@@ -341,6 +341,43 @@ func (gm *GameManager) startRematch(oldGame *models.GameSession) {
 	log.Printf("Rematch started: %s (seed: %d)", newGame.ID, newGame.Seed)
 }
 
+// HandlePlayerDisconnect handles when a player disconnects mid-game
+func (gm *GameManager) HandlePlayerDisconnect(playerID string) error {
+	// Find any active game this player is in
+	games, err := gm.gameStore.GetActiveGames()
+	if err != nil {
+		return err
+	}
+
+	for _, game := range games {
+		if game.Player1.ID == playerID || game.Player2.ID == playerID {
+			// Player disconnected from active game - opponent wins by forfeit
+			var opponentID string
+			if game.Player1.ID == playerID {
+				opponentID = game.Player2.ID
+			} else {
+				opponentID = game.Player1.ID
+			}
+
+			// End the game with opponent as winner
+			gm.finalizeGame(game, opponentID)
+
+			// Notify opponent of disconnect
+			disconnectMsg := map[string]interface{}{
+				"type":    "opponent_disconnected",
+				"message": "Opponent disconnected - You win!",
+			}
+			gm.sendToPlayer(opponentID, disconnectMsg)
+
+			log.Printf("Player %s disconnected from game %s, opponent %s wins by forfeit",
+				playerID, game.ID, opponentID)
+			break
+		}
+	}
+
+	return nil
+}
+
 // sendToPlayer sends a message to a specific player via WebSocket
 func (gm *GameManager) sendToPlayer(playerID string, message map[string]interface{}) {
 	data, err := json.Marshal(message)

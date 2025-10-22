@@ -222,3 +222,58 @@ func TestHandleGameStateScoreTracking(t *testing.T) {
 		t.Errorf("Expected Player2Score to be 1200, got %d", updatedGame.Player2Score)
 	}
 }
+
+func TestHandlePlayerDisconnect(t *testing.T) {
+	// Setup
+	gameStore := memory.NewGameStore()
+	playerStore := memory.NewPlayerStore()
+	wsManager := NewWebSocketManager()
+	gm := NewGameManager(gameStore, playerStore, wsManager)
+
+	// Create active game
+	game := &models.GameSession{
+		ID:      "disconnect_game",
+		Player1: &models.Player{ID: "player1", GameID: "disconnect_game"},
+		Player2: &models.Player{ID: "player2", GameID: "disconnect_game"},
+		Status:  models.GameStatusActive,
+	}
+
+	gameStore.CreateGame(game)
+	playerStore.CreatePlayer(game.Player1)
+	playerStore.CreatePlayer(game.Player2)
+
+	// Player 1 disconnects
+	err := gm.HandlePlayerDisconnect("player1")
+	if err != nil {
+		t.Fatalf("HandlePlayerDisconnect failed: %v", err)
+	}
+
+	// Game should be finished with player2 as winner
+	updatedGame, _ := gameStore.GetGame("disconnect_game")
+	if updatedGame.Status != models.GameStatusFinished {
+		t.Error("Game should be finished after player disconnect")
+	}
+
+	// Players should be cleared from game
+	updatedPlayer1, _ := playerStore.GetPlayer("player1")
+	updatedPlayer2, _ := playerStore.GetPlayer("player2")
+	if updatedPlayer1.GameID != "" || updatedPlayer2.GameID != "" {
+		t.Error("Players should be cleared from game after disconnect")
+	}
+}
+
+func TestHandlePlayerDisconnectNoActiveGame(t *testing.T) {
+	// Setup
+	gameStore := memory.NewGameStore()
+	playerStore := memory.NewPlayerStore()
+	wsManager := NewWebSocketManager()
+	gm := NewGameManager(gameStore, playerStore, wsManager)
+
+	// Try to disconnect player with no active game
+	err := gm.HandlePlayerDisconnect("nonexistent_player")
+	if err != nil {
+		t.Fatalf("HandlePlayerDisconnect should not fail for non-existent player: %v", err)
+	}
+
+	// Should handle gracefully with no errors
+}

@@ -245,3 +245,38 @@ func TestPieceGenerator(t *testing.T) {
 		t.Error("Failed to get piece after bag should have refilled")
 	}
 }
+
+func TestPieceGeneratorSetSeed(t *testing.T) {
+	gen1 := NewPieceGenerator()
+	gen2 := NewPieceGenerator()
+
+	// Set same seed for both generators
+	gen1.SetSeed(12345)
+	gen2.SetSeed(12345)
+
+	// Should generate identical sequences
+	for i := 0; i < 20; i++ {
+		piece1 := gen1.NextPiece()
+		piece2 := gen2.NextPiece()
+
+		if piece1.Type != piece2.Type {
+			t.Errorf("Generators with same seed should produce identical pieces at position %d: got %d vs %d", 
+				i, piece1.Type, piece2.Type)
+		}
+	}
+
+	// Test changing seed mid-generation
+	gen1.SetSeed(54321)
+	gen2.SetSeed(54321)
+
+	// Should again generate identical sequences after seed change
+	for i := 0; i < 10; i++ {
+		piece1 := gen1.NextPiece()
+		piece2 := gen2.NextPiece()
+
+		if piece1.Type != piece2.Type {
+			t.Errorf("Generators should produce identical pieces after seed change at position %d: got %d vs %d", 
+				i, piece1.Type, piece2.Type)
+		}
+	}
+}

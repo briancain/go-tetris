@@ -419,3 +419,44 @@ func TestGameStartResetsMultiplayerFlags(t *testing.T) {
 		t.Error("LoserScore should be reset to 0 on game start")
 	}
 }
+
+func TestCanProcessInput(t *testing.T) {
+	game := NewGame()
+	game.Start()
+
+	// Should allow input when playing normally
+	if !game.canProcessInput() {
+		t.Error("Should allow input when game is playing")
+	}
+
+	// Should not allow input when game over
+	game.State = StateGameOver
+	if game.canProcessInput() {
+		t.Error("Should not allow input when game is over")
+	}
+
+	// Should not allow input when local player lost in multiplayer
+	game.State = StatePlaying
+	game.MultiplayerMode = true
+	game.LocalPlayerLost = true
+	if game.canProcessInput() {
+		t.Error("Should not allow input when local player lost in multiplayer")
+	}
+}
+
+func TestHandleOpponentDisconnected(t *testing.T) {
+	game := NewGame()
+	game.MultiplayerMode = true
+	game.Start()
+
+	// Handle opponent disconnect
+	message := map[string]interface{}{
+		"type":    "opponent_disconnected",
+		"message": "Opponent disconnected - You win!",
+	}
+	game.handleOpponentDisconnected(message)
+
+	if game.State != StateGameOver {
+		t.Error("Game should end when opponent disconnects")
+	}
+}

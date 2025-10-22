@@ -33,6 +33,11 @@ const (
 	HoldX = 100
 	HoldY = 80
 
+	// Opponent board position (bottom left)
+	OpponentBoardX   = 20
+	OpponentBoardY   = 280
+	OpponentCellSize = 8 // Smaller cells for opponent board
+
 	// UI colors
 	BackgroundColor = 0x1A1A1AFF
 )
@@ -252,6 +257,11 @@ func (r *Renderer) drawGame(screen *ebiten.Image) {
 
 	// Draw the held piece
 	r.drawHeldPiece(screen)
+
+	// Draw opponent board if in multiplayer
+	if r.game.MultiplayerMode {
+		r.drawOpponentBoard(screen)
+	}
 
 	// Draw game stats
 	r.drawGameStats(screen)
@@ -494,6 +504,58 @@ func (r *Renderer) drawHeldPiece(screen *ebiten.Image) {
 	}
 }
 
+// drawOpponentBoard draws the opponent's board in the bottom left
+func (r *Renderer) drawOpponentBoard(screen *ebiten.Image) {
+	if len(r.game.OpponentBoard) == 0 {
+		return // No opponent data yet
+	}
+
+	// Draw title
+	text.Draw(screen, "Opponent:", r.font, OpponentBoardX, OpponentBoardY-15, color.White)
+
+	// Draw border
+	borderColor := color.RGBA{100, 100, 100, 255}
+	boardWidth := tetris.BoardWidth * OpponentCellSize
+	boardHeight := tetris.BoardHeight * OpponentCellSize
+
+	// Border outline
+	vector.DrawFilledRect(screen, float32(OpponentBoardX-1), float32(OpponentBoardY-1), float32(boardWidth+2), 1, borderColor, false)           // Top
+	vector.DrawFilledRect(screen, float32(OpponentBoardX-1), float32(OpponentBoardY-1), 1, float32(boardHeight+2), borderColor, false)          // Left
+	vector.DrawFilledRect(screen, float32(OpponentBoardX+boardWidth), float32(OpponentBoardY-1), 1, float32(boardHeight+2), borderColor, false) // Right
+	vector.DrawFilledRect(screen, float32(OpponentBoardX-1), float32(OpponentBoardY+boardHeight), float32(boardWidth+2), 1, borderColor, false) // Bottom
+
+	// Draw the opponent board (only visible rows, skip buffer rows)
+	bufferRows := tetris.BoardHeightWithBuffer - tetris.BoardHeight
+	for y := 0; y < tetris.BoardHeight; y++ {
+		for x := 0; x < tetris.BoardWidth; x++ {
+			cellX := OpponentBoardX + x*OpponentCellSize
+			cellY := OpponentBoardY + y*OpponentCellSize
+
+			// Access the correct row (skip buffer rows at top)
+			boardRow := y + bufferRows
+			if r.game.OpponentBoard[boardRow][x] != tetris.Empty {
+				// Draw filled cell
+				cellColor := pieceColors[r.game.OpponentBoard[boardRow][x]]
+				r.drawSmallCell(screen, cellX, cellY, cellColor)
+			} else {
+				// Draw empty cell
+				r.drawSmallEmptyCell(screen, cellX, cellY)
+			}
+		}
+	}
+}
+
+// drawSmallCell draws a small colored cell for opponent board
+func (r *Renderer) drawSmallCell(screen *ebiten.Image, x, y int, clr color.RGBA) {
+	vector.DrawFilledRect(screen, float32(x), float32(y), float32(OpponentCellSize), float32(OpponentCellSize), clr, false)
+}
+
+// drawSmallEmptyCell draws a small empty cell for opponent board
+func (r *Renderer) drawSmallEmptyCell(screen *ebiten.Image, x, y int) {
+	emptyColor := color.RGBA{20, 20, 20, 255}
+	vector.DrawFilledRect(screen, float32(x), float32(y), float32(OpponentCellSize), float32(OpponentCellSize), emptyColor, false)
+}
+
 // drawGameStats draws the game statistics
 func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 	// Calculate box height based on multiplayer mode
@@ -644,7 +706,8 @@ func (r *Renderer) drawGameOverOverlay(screen *ebiten.Image) {
 		} else if r.game.LocalPlayerLost && r.game.OpponentLost {
 			msg = "BOTH LOST"
 		} else {
-			msg = "GAME OVER"
+			// Check if we won by opponent disconnect (no loss flags set but game over)
+			msg = "YOU WON!"
 		}
 	} else {
 		msg = "GAME OVER"
