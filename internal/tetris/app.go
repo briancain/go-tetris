@@ -27,9 +27,31 @@ func NewApp(game *Game, renderer interface {
 func (g *App) Update() error {
 	// Handle input based on game state
 	switch g.game.State {
-	case StateMenu:
-		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+	case StateMainMenu:
+		if inpututil.IsKeyJustPressed(ebiten.Key1) {
+			// Single Player
 			g.game.Start()
+		}
+		if inpututil.IsKeyJustPressed(ebiten.Key2) {
+			// Multiplayer
+			g.game.State = StateMultiplayerSetup
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			// Quit (for now, just do nothing)
+		}
+	case StateMultiplayerSetup:
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+			// For now, just go to matchmaking
+			g.game.State = StateMatchmaking
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			// Back to main menu
+			g.game.State = StateMainMenu
+		}
+	case StateMatchmaking:
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			// Cancel matchmaking, back to main menu
+			g.game.State = StateMainMenu
 		}
 	case StatePlaying:
 		// Game controls

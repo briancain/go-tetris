@@ -46,7 +46,7 @@ func (g *Game) IsPlaying() bool {
 
 // IsInMenu returns true if the game is in the menu
 func (g *Game) IsInMenu() bool {
-	return g.State == StateMenu
+	return g.State == StateMainMenu || g.State == StateMultiplayerSetup || g.State == StateMatchmaking
 }
 
 // GetHeldPiece returns a copy of the held piece for display

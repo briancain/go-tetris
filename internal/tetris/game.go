@@ -8,7 +8,9 @@ import (
 
 // Game states
 const (
-	StateMenu = iota
+	StateMainMenu = iota
+	StateMultiplayerSetup
+	StateMatchmaking
 	StatePlaying
 	StatePaused
 	StateGameOver
@@ -50,7 +52,7 @@ type Game struct {
 func NewGame() *Game {
 	game := &Game{
 		Board:             NewBoard(),
-		State:             StateMenu,
+		State:             StateMainMenu,
 		Score:             0,
 		Level:             1,
 		LinesCleared:      0,
@@ -72,7 +74,7 @@ func NewGame() *Game {
 func NewGameWithSeed(seed int64) *Game {
 	game := &Game{
 		Board:             NewBoard(),
-		State:             StateMenu,
+		State:             StateMainMenu,
 		Score:             0,
 		Level:             1,
 		LinesCleared:      0,

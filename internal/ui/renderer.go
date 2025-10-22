@@ -82,8 +82,12 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 	})
 
 	switch r.game.State {
-	case tetris.StateMenu:
-		r.drawMenu(screen)
+	case tetris.StateMainMenu:
+		r.drawMainMenu(screen)
+	case tetris.StateMultiplayerSetup:
+		r.drawMultiplayerSetup(screen)
+	case tetris.StateMatchmaking:
+		r.drawMatchmaking(screen)
 	case tetris.StatePlaying, tetris.StatePaused:
 		r.drawGame(screen)
 		if r.game.State == tetris.StatePaused {
@@ -95,8 +99,8 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 	}
 }
 
-// drawMenu draws the main menu
-func (r *Renderer) drawMenu(screen *ebiten.Image) {
+// drawMainMenu draws the main menu with game mode options
+func (r *Renderer) drawMainMenu(screen *ebiten.Image) {
 	// Draw the Tetris logo if available
 	if r.logoImg != nil {
 		logoWidth := r.logoImg.Bounds().Dx()
@@ -123,9 +127,20 @@ func (r *Renderer) drawMenu(screen *ebiten.Image) {
 	y := ScreenHeight / 3
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
-	msg = "Press ENTER to start"
+	// Menu options
+	msg = "1. Single Player"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2 + 20
+	y = ScreenHeight/2 - 10
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+	msg = "2. Multiplayer"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight/2 + 10
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+	msg = "ESC. Quit"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight/2 + 30
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Controls:"
@@ -562,5 +577,46 @@ func (r *Renderer) drawGameOverOverlay(screen *ebiten.Image) {
 	msg = "Press ENTER to play again"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 30
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+}
+
+// drawMultiplayerSetup draws the multiplayer setup screen
+func (r *Renderer) drawMultiplayerSetup(screen *ebiten.Image) {
+	msg := "MULTIPLAYER SETUP"
+	x := (ScreenWidth - len(msg)*7) / 2
+	y := ScreenHeight / 4
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+	msg = "Enter your username:"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight/2 - 20
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+	msg = "[Username input will go here]"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight/2
+	text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // nolint:staticcheck // Using deprecated API for compatibility
+
+	msg = "ENTER to connect | ESC to back"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight/2 + 40
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+}
+
+// drawMatchmaking draws the matchmaking screen
+func (r *Renderer) drawMatchmaking(screen *ebiten.Image) {
+	msg := "FINDING MATCH..."
+	x := (ScreenWidth - len(msg)*7) / 2
+	y := ScreenHeight / 3
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+	msg = "Queue position: [X]"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight/2
+	text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // nolint:staticcheck // Using deprecated API for compatibility
+
+	msg = "ESC to cancel"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight/2 + 40
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 }
