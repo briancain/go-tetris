@@ -32,12 +32,17 @@ help:
 	@echo ''
 
 # Build all applications
-build: build-desktop build-web
+build: build-desktop build-web build-server
 
 # Build the desktop application
 build-desktop:
 	mkdir -p $(BIN_DIR)
 	go build -o $(BIN_DIR)/$(BINARY_NAME) ./cmd
+
+# Build the server application
+build-server:
+	mkdir -p $(BIN_DIR)
+	go build -o $(BIN_DIR)/server ./cmd/server
 
 # Build for web (WebAssembly)
 build-web:
@@ -61,9 +66,27 @@ run-web: build-web
 	@echo "Starting web server at http://localhost:8000"
 	cd $(BIN_DIR)/web && python3 -m http.server 8000
 
+# Run the server application
+run-server: build-server
+	./$(BIN_DIR)/server
+
 # Run all tests
 test:
 	go test ./...
+
+# Run server tests only
+test-server:
+	go test ./internal/server/...
+
+# Run integration tests (requires server to be running)
+test-integration:
+	go test ./test/integration -v
+
+# Run manual test client
+test-manual:
+	@echo "Starting manual test client..."
+	@echo "Make sure server is running with 'make run-server'"
+	go run test/manual/manual_client.go $(USER)
 
 # Run tests with verbose output
 test-verbose:
