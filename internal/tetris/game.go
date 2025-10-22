@@ -14,6 +14,7 @@ const (
 	StatePlaying
 	StatePaused
 	StateGameOver
+	StateRematchWaiting
 )
 
 // Game represents the Tetris game state
@@ -38,6 +39,7 @@ type Game struct {
 	PieceGen          *PieceGenerator // 7-bag piece generator
 	BackToBack        bool            // Track back-to-back special clears
 	LastClearWasTSpin bool            // Track if the last clear was a T-spin
+	LastWasBackToBack bool            // Track if the last clear got back-to-back bonus
 
 	// Multiplayer fields
 	MultiplayerMode   bool               `json:"multiplayerMode"`
@@ -49,6 +51,7 @@ type Game struct {
 	LocalPlayerLost   bool               `json:"localPlayerLost,omitempty"`
 	OpponentLost      bool               `json:"opponentLost,omitempty"`
 	LoserScore        int                `json:"loserScore,omitempty"`
+	RematchRequested  bool               `json:"rematchRequested,omitempty"`
 
 	// UI state
 	UsernameInput    string `json:"usernameInput,omitempty"`
@@ -114,10 +117,24 @@ func (g *Game) Start() {
 	g.DropTimer = time.Now()
 	g.BackToBack = false
 	g.LastClearWasTSpin = false
+	g.LastWasBackToBack = false
 	g.LocalPlayerLost = false
 	g.OpponentLost = false
 	g.LoserScore = 0
+	g.RematchRequested = false
 	g.updateDropInterval()
+}
+
+// canProcessInput returns true if the game can process input
+func (g *Game) canProcessInput() bool {
+	if g.State != StatePlaying {
+		return false
+	}
+	// Stop input if local player lost in multiplayer
+	if g.MultiplayerMode && g.LocalPlayerLost {
+		return false
+	}
+	return true
 }
 
 // Update updates the game state
@@ -127,7 +144,7 @@ func (g *Game) Update() {
 		g.ProcessMultiplayerMessages()
 	}
 
-	if g.State != StatePlaying {
+	if !g.canProcessInput() {
 		return
 	}
 
@@ -165,7 +182,7 @@ func (g *Game) moveDown() {
 
 // MoveLeft moves the current piece left
 func (g *Game) MoveLeft() bool {
-	if g.State != StatePlaying || time.Since(g.LastMoveSide) < g.InputDelay {
+	if !g.canProcessInput() || time.Since(g.LastMoveSide) < g.InputDelay {
 		return false
 	}
 
@@ -184,7 +201,7 @@ func (g *Game) MoveLeft() bool {
 
 // MoveRight moves the current piece right
 func (g *Game) MoveRight() bool {
-	if g.State != StatePlaying || time.Since(g.LastMoveSide) < g.InputDelay {
+	if !g.canProcessInput() || time.Since(g.LastMoveSide) < g.InputDelay {
 		return false
 	}
 
@@ -203,7 +220,12 @@ func (g *Game) MoveRight() bool {
 
 // RotatePiece rotates the current piece using SRS
 func (g *Game) RotatePiece() bool {
-	if g.State != StatePlaying || time.Since(g.LastRotate) < g.InputDelay {
+	if !g.canProcessInput() || time.Since(g.LastRotate) < g.InputDelay {
+		return false
+	}
+
+	// Stop input if local player lost in multiplayer
+	if g.MultiplayerMode && g.LocalPlayerLost {
 		return false
 	}
 
@@ -262,7 +284,7 @@ func (g *Game) RotatePiece() bool {
 
 // HardDrop drops the piece all the way down
 func (g *Game) HardDrop() {
-	if g.State != StatePlaying {
+	if !g.canProcessInput() {
 		return
 	}
 
@@ -296,7 +318,7 @@ func (g *Game) HardDrop() {
 
 // SoftDrop accelerates the piece downward
 func (g *Game) SoftDrop() bool {
-	if g.State != StatePlaying || time.Since(g.LastMoveDown) < g.FastDropDelay {
+	if !g.canProcessInput() || time.Since(g.LastMoveDown) < g.FastDropDelay {
 		return false
 	}
 
@@ -413,8 +435,10 @@ func (g *Game) addScore(linesCleared int) {
 	}
 
 	// Back-to-Back bonus (50% bonus for consecutive special clears)
+	g.LastWasBackToBack = false
 	if isSpecialClear && g.BackToBack && linesCleared > 0 {
 		points = points * 3 / 2 // 50% bonus
+		g.LastWasBackToBack = true
 	}
 
 	// Update Back-to-Back status
@@ -456,7 +480,7 @@ func pow(x, y float64) float64 {
 
 // HoldPiece swaps the current piece with the held piece
 func (g *Game) HoldPiece() bool {
-	if g.State != StatePlaying || time.Since(g.LastHold) < g.InputDelay {
+	if !g.canProcessInput() || time.Since(g.LastHold) < g.InputDelay {
 		return false
 	}
 
@@ -648,6 +672,10 @@ func (g *Game) handleMultiplayerMessage(message map[string]interface{}) {
 		g.handleGameOver(message)
 	case "player_lost":
 		g.handlePlayerLost(message)
+	case "rematch_request":
+		g.handleRematchRequest(message)
+	case "rematch_start":
+		g.handleRematchStart(message)
 	}
 }
 
@@ -756,6 +784,45 @@ func (g *Game) sendMoveToServer(moveType string) {
 	if g.MultiplayerClient != nil && g.MultiplayerClient.IsConnected() {
 		g.MultiplayerClient.SendGameMove(moveType)
 	}
+}
+
+// RequestRematch sends a rematch request to the server
+func (g *Game) RequestRematch() {
+	if !g.MultiplayerMode || g.MultiplayerClient == nil {
+		return
+	}
+
+	g.RematchRequested = true
+	g.State = StateRematchWaiting
+
+	message := map[string]interface{}{
+		"type": "rematch_request",
+	}
+
+	if g.MultiplayerClient.IsConnected() {
+		g.MultiplayerClient.sendMessage(message)
+	}
+
+	log.Printf("Game: Rematch requested")
+}
+
+// handleRematchRequest processes rematch request from opponent
+func (g *Game) handleRematchRequest(message map[string]interface{}) {
+	log.Printf("Game: Opponent requested rematch")
+	// Could show UI notification here
+}
+
+// handleRematchStart processes rematch start from server
+func (g *Game) handleRematchStart(message map[string]interface{}) {
+	seed, ok := message["seed"].(float64)
+	if ok {
+		g.PieceGen.SetSeed(int64(seed))
+		log.Printf("Game: Rematch starting with seed: %d", int64(seed))
+	}
+
+	// Reset game state for rematch
+	g.Start()
+	log.Printf("Game: Rematch started")
 }
 
 // sendStateToServer sends current game state to server

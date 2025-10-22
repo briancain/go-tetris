@@ -29,6 +29,11 @@ func (g *Game) GetLinesCleared() int {
 	return g.LinesCleared
 }
 
+// GetLastWasBackToBack returns whether the last clear got back-to-back bonus
+func (g *Game) GetLastWasBackToBack() bool {
+	return g.LastWasBackToBack
+}
+
 // IsGameOver returns true if the game is over
 func (g *Game) IsGameOver() bool {
 	return g.State == StateGameOver

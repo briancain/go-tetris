@@ -96,6 +96,9 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 	case tetris.StateGameOver:
 		r.drawGame(screen)
 		r.drawGameOverOverlay(screen)
+	case tetris.StateRematchWaiting:
+		r.drawGame(screen)
+		r.drawRematchWaitingOverlay(screen)
 	}
 }
 
@@ -567,7 +570,7 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 	text.Draw(screen, fmt.Sprintf("%d", r.game.GetLinesCleared()), r.font, PreviewX+5, linesY+20, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Draw Back-to-Back status
-	if r.game.GetBackToBack() {
+	if r.game.GetLastWasBackToBack() {
 		text.Draw(screen, "Back-to-Back", r.font, PreviewX-5, linesY+40, color.RGBA{255, 215, 0, 255}) // Gold color
 	}
 
@@ -643,10 +646,40 @@ func (r *Renderer) drawGameOverOverlay(screen *ebiten.Image) {
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Restart instructions
-	msg = "Press ENTER to play again"
+	if r.game.MultiplayerMode {
+		msg = "Press ENTER for rematch"
+	} else {
+		msg = "Press ENTER to play again"
+	}
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 30
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+}
+
+// drawRematchWaitingOverlay draws the rematch waiting screen
+func (r *Renderer) drawRematchWaitingOverlay(screen *ebiten.Image) {
+	// Semi-transparent overlay
+	vector.DrawFilledRect(
+		screen,
+		0,
+		0,
+		float32(ScreenWidth),
+		float32(ScreenHeight),
+		color.RGBA{0, 0, 0, 192},
+		false,
+	)
+
+	// Waiting message
+	msg := "WAITING FOR OPPONENT"
+	x := (ScreenWidth - len(msg)*7) / 2
+	y := ScreenHeight/2 - 30
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+	// Status message
+	msg = "Rematch requested..."
+	x = (ScreenWidth - len(msg)*7) / 2
+	y += 30
+	text.Draw(screen, msg, r.font, x, y, color.RGBA{255, 215, 0, 255}) // Gold
 }
 
 // drawMultiplayerSetup draws the multiplayer setup screen

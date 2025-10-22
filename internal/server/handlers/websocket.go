@@ -104,6 +104,8 @@ func (h *WebSocketHandler) handleMessages(playerID string, conn *websocket.Conn)
 			h.handleGameState(playerID, message)
 		case "game_over":
 			h.handleGameOver(playerID, message)
+		case "rematch_request":
+			h.handleRematchRequest(playerID, message)
 		case "ping":
 			h.handlePing(playerID)
 		default:
@@ -181,6 +183,14 @@ func (h *WebSocketHandler) handleGameOver(playerID string, message map[string]in
 	err := h.gameManager.EndGame(gameID, playerID)
 	if err != nil {
 		log.Printf("Failed to handle game over: %v", err)
+	}
+}
+
+// handleRematchRequest processes a rematch request
+func (h *WebSocketHandler) handleRematchRequest(playerID string, message map[string]interface{}) {
+	err := h.gameManager.HandleRematchRequest(playerID)
+	if err != nil {
+		log.Printf("Failed to handle rematch request: %v", err)
 	}
 }
 

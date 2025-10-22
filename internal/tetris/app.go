@@ -102,8 +102,14 @@ func (g *App) Update() error {
 		}
 	case StateGameOver:
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-			g.game.Start()
+			if g.game.MultiplayerMode {
+				g.game.RequestRematch()
+			} else {
+				g.game.Start()
+			}
 		}
+	case StateRematchWaiting:
+		// Just wait for server response
 	}
 
 	return nil

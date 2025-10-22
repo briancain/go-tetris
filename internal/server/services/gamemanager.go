@@ -1,8 +1,12 @@
 package services
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/briancain/go-tetris/internal/server/storage"
 	"github.com/briancain/go-tetris/pkg/models"
@@ -243,6 +247,100 @@ func (gm *GameManager) finalizeGame(game *models.GameSession, winnerID string) {
 		game.ID, winnerID, game.Player1Score, game.Player2Score)
 }
 
+// HandleRematchRequest processes a rematch request from a player
+func (gm *GameManager) HandleRematchRequest(playerID string) error {
+	// Find the most recent finished game for this player
+	games, err := gm.gameStore.GetAllGames()
+	if err != nil {
+		return err
+	}
+
+	var lastGame *models.GameSession
+	for _, game := range games {
+		if game.Status == models.GameStatusFinished &&
+			(game.Player1.ID == playerID || game.Player2.ID == playerID) {
+			lastGame = game
+			break
+		}
+	}
+
+	if lastGame == nil {
+		return fmt.Errorf("no finished game found for player %s", playerID)
+	}
+
+	// Mark rematch request
+	if lastGame.Player1.ID == playerID {
+		lastGame.Player1RematchReq = true
+	} else {
+		lastGame.Player2RematchReq = true
+	}
+
+	// Update game
+	err = gm.gameStore.UpdateGame(lastGame)
+	if err != nil {
+		return err
+	}
+
+	// Notify opponent of rematch request
+	var opponentID string
+	if lastGame.Player1.ID == playerID {
+		opponentID = lastGame.Player2.ID
+	} else {
+		opponentID = lastGame.Player1.ID
+	}
+
+	rematchMsg := map[string]interface{}{
+		"type": "rematch_request",
+	}
+	gm.sendToPlayer(opponentID, rematchMsg)
+
+	// Check if both players want rematch
+	if lastGame.Player1RematchReq && lastGame.Player2RematchReq {
+		gm.startRematch(lastGame)
+	}
+
+	log.Printf("Rematch requested by %s in game %s", playerID, lastGame.ID)
+	return nil
+}
+
+// startRematch creates a new game with the same players
+func (gm *GameManager) startRematch(oldGame *models.GameSession) {
+	// Create new game with same players but new seed
+	newGame := &models.GameSession{
+		ID:        generateGameID(),
+		Player1:   oldGame.Player1,
+		Player2:   oldGame.Player2,
+		Seed:      generateSeed(),
+		Status:    models.GameStatusActive,
+		CreatedAt: time.Now(),
+	}
+
+	// Update player game IDs
+	newGame.Player1.GameID = newGame.ID
+	newGame.Player2.GameID = newGame.ID
+	gm.playerStore.UpdatePlayer(newGame.Player1)
+	gm.playerStore.UpdatePlayer(newGame.Player2)
+
+	// Store new game
+	err := gm.gameStore.CreateGame(newGame)
+	if err != nil {
+		log.Printf("Failed to create rematch game: %v", err)
+		return
+	}
+
+	// Send rematch start to both players
+	rematchStartMsg := map[string]interface{}{
+		"type":   "rematch_start",
+		"gameId": newGame.ID,
+		"seed":   newGame.Seed,
+	}
+
+	gm.sendToPlayer(newGame.Player1.ID, rematchStartMsg)
+	gm.sendToPlayer(newGame.Player2.ID, rematchStartMsg)
+
+	log.Printf("Rematch started: %s (seed: %d)", newGame.ID, newGame.Seed)
+}
+
 // sendToPlayer sends a message to a specific player via WebSocket
 func (gm *GameManager) sendToPlayer(playerID string, message map[string]interface{}) {
 	data, err := json.Marshal(message)
@@ -252,4 +350,11 @@ func (gm *GameManager) sendToPlayer(playerID string, message map[string]interfac
 	}
 
 	gm.wsManager.SendToPlayer(playerID, data)
+}
+
+// generateGameID creates a unique game ID
+func generateGameID() string {
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
 }

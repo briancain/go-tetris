@@ -18,6 +18,7 @@ type GameStore interface {
 	UpdateGame(game *models.GameSession) error
 	DeleteGame(id string) error
 	GetActiveGames() ([]*models.GameSession, error)
+	GetAllGames() ([]*models.GameSession, error)
 }
 
 // QueueStore handles matchmaking queue

@@ -86,3 +86,16 @@ func (s *GameStore) GetActiveGames() ([]*models.GameSession, error) {
 
 	return activeGames, nil
 }
+
+// GetAllGames returns all game sessions
+func (s *GameStore) GetAllGames() ([]*models.GameSession, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var allGames []*models.GameSession
+	for _, game := range s.games {
+		allGames = append(allGames, game)
+	}
+
+	return allGames, nil
+}
