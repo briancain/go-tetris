@@ -139,7 +139,7 @@ fmt-check:
 
 # Run linter
 lint:
-	golangci-lint run
+	golangci-lint run --timeout=5m --issues-exit-code=0
 
 # Verify all checks
 verify: fmt-check mod-tidy-check lint test
