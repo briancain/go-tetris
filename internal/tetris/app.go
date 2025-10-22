@@ -1,6 +1,8 @@
 package tetris
 
 import (
+	"unicode"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -40,13 +42,21 @@ func (g *App) Update() error {
 			// Quit (for now, just do nothing)
 		}
 	case StateMultiplayerSetup:
+		// Handle text input for username
+		g.handleTextInput()
+
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-			// For now, just go to matchmaking
-			g.game.State = StateMatchmaking
+			// Start multiplayer connection
+			go g.game.StartMultiplayerConnection()
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 			// Back to main menu
 			g.game.State = StateMainMenu
+			g.game.UsernameInput = ""
+			g.game.ConnectionStatus = ""
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+			g.game.RemoveFromUsernameInput()
 		}
 	case StateMatchmaking:
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
@@ -107,4 +117,16 @@ func (g *App) Draw(screen *ebiten.Image) {
 // Layout returns the game's logical screen size
 func (g *App) Layout(_, _ int) (int, int) {
 	return 640, 480 // Fixed game resolution
+}
+
+// handleTextInput processes text input for username entry
+func (g *App) handleTextInput() {
+	// Get typed characters
+	runes := ebiten.AppendInputChars(nil)
+	for _, r := range runes {
+		// Only allow alphanumeric characters and basic symbols
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' {
+			g.game.AddToUsernameInput(r)
+		}
+	}
 }

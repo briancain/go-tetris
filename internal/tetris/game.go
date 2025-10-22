@@ -46,6 +46,10 @@ type Game struct {
 	OpponentScore     int                `json:"opponentScore,omitempty"`
 	OpponentLevel     int                `json:"opponentLevel,omitempty"`
 	OpponentLines     int                `json:"opponentLines,omitempty"`
+
+	// UI state
+	UsernameInput    string `json:"usernameInput,omitempty"`
+	ConnectionStatus string `json:"connectionStatus,omitempty"`
 }
 
 // NewGame creates a new Tetris game
@@ -709,4 +713,61 @@ func (g *Game) sendStateToServer() {
 		}
 		g.MultiplayerClient.SendGameState(board, g.Score, g.Level, g.LinesCleared)
 	}
+}
+
+// AddToUsernameInput adds a character to the username input
+func (g *Game) AddToUsernameInput(char rune) {
+	if len(g.UsernameInput) < 12 { // Limit to 12 characters for better display
+		g.UsernameInput += string(char)
+	}
+}
+
+// RemoveFromUsernameInput removes the last character from username input
+func (g *Game) RemoveFromUsernameInput() {
+	if len(g.UsernameInput) > 0 {
+		g.UsernameInput = g.UsernameInput[:len(g.UsernameInput)-1]
+	}
+}
+
+// StartMultiplayerConnection attempts to connect to the multiplayer server
+func (g *Game) StartMultiplayerConnection() {
+	if len(g.UsernameInput) < 2 {
+		g.ConnectionStatus = "Username must be at least 2 characters"
+		return
+	}
+	if len(g.UsernameInput) > 12 {
+		g.ConnectionStatus = "Username too long (max 12 characters)"
+		return
+	}
+
+	g.ConnectionStatus = "Connecting to server..."
+
+	// Enable multiplayer mode
+	err := g.EnableMultiplayer("http://localhost:8080")
+	if err != nil {
+		log.Printf("Multiplayer: Failed to enable multiplayer: %v", err)
+		g.ConnectionStatus = "Connection error occurred"
+		return
+	}
+
+	// Connect to server
+	err = g.ConnectToServer(g.UsernameInput)
+	if err != nil {
+		log.Printf("Multiplayer: Failed to connect to server: %v", err)
+		g.ConnectionStatus = "Connection error occurred"
+		return
+	}
+
+	// Join matchmaking
+	err = g.JoinMatchmaking()
+	if err != nil {
+		log.Printf("Multiplayer: Failed to join matchmaking queue: %v", err)
+		g.ConnectionStatus = "Connection error occurred"
+		return
+	}
+
+	// Success - move to matchmaking state
+	log.Printf("Multiplayer: Successfully connected as %s", g.UsernameInput)
+	g.ConnectionStatus = "Finding match..."
+	g.State = StateMatchmaking
 }

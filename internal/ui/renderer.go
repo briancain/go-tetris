@@ -589,17 +589,43 @@ func (r *Renderer) drawMultiplayerSetup(screen *ebiten.Image) {
 
 	msg = "Enter your username:"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2 - 20
+	y = ScreenHeight/2 - 40
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
-	msg = "[Username input will go here]"
-	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight / 2
-	text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // nolint:staticcheck // Using deprecated API for compatibility
+	// Show username input with cursor
+	username := r.game.UsernameInput
+	if username == "" {
+		username = "_"
+	} else {
+		username += "_" // Show cursor
+	}
+	x = (ScreenWidth - len(username)*7) / 2
+	y = ScreenHeight/2 - 10
+	text.Draw(screen, username, r.font, x, y, color.RGBA{255, 255, 0, 255}) // Yellow text
+
+	// Show character count
+	charCount := fmt.Sprintf("(%d/12)", len(r.game.UsernameInput))
+	x = (ScreenWidth - len(charCount)*7) / 2
+	y = ScreenHeight/2 + 10
+	text.Draw(screen, charCount, r.font, x, y, color.RGBA{128, 128, 128, 255}) // Gray text
+
+	// Show connection status if any
+	if r.game.ConnectionStatus != "" {
+		status := r.game.ConnectionStatus
+		x = (ScreenWidth - len(status)*7) / 2
+		y = ScreenHeight/2 + 30
+		statusColor := color.RGBA{255, 255, 255, 255} // White
+		if status == "Connection error occurred" ||
+			status == "Username must be at least 2 characters" ||
+			status == "Username too long (max 12 characters)" {
+			statusColor = color.RGBA{255, 0, 0, 255} // Red for errors
+		}
+		text.Draw(screen, status, r.font, x, y, statusColor) // nolint:staticcheck // Using deprecated API for compatibility
+	}
 
 	msg = "ENTER to connect | ESC to back"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2 + 40
+	y = ScreenHeight/2 + 60
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 }
 
