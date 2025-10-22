@@ -148,13 +148,8 @@ func (g *Game) moveDown() {
 		g.addScore(linesCleared)
 	}
 
-	// Check for game over
-	g.CurrentPiece = g.NextPiece
-	g.NextPiece = g.PieceGen.NextPiece()
-
-	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
-		g.State = StateGameOver
-	}
+	// Spawn next piece and check for game over
+	g.spawnNextPiece()
 }
 
 // MoveLeft moves the current piece left
@@ -284,13 +279,8 @@ func (g *Game) HardDrop() {
 	// Send updated state to server
 	g.sendStateToServer()
 
-	// Check for game over
-	g.CurrentPiece = g.NextPiece
-	g.NextPiece = g.PieceGen.NextPiece()
-
-	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
-		g.State = StateGameOver
-	}
+	// Spawn next piece and check for game over
+	g.spawnNextPiece()
 }
 
 // SoftDrop accelerates the piece downward
@@ -326,6 +316,32 @@ func (g *Game) TogglePause() {
 func (g *Game) lockPiece() {
 	g.Board.PlacePiece(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y, true)
 	g.HasSwapped = false // Reset swap flag when piece is locked
+
+	// Check for game over - if any part of the piece locked in the hidden area (top 2 rows)
+	shape := g.CurrentPiece.Shape
+	for i := 0; i < len(shape); i++ {
+		for j := 0; j < len(shape[0]); j++ {
+			if shape[i][j] {
+				pieceY := g.CurrentPiece.Y + i
+				// If any part of the piece is in the hidden area (rows 0-1), game over
+				if pieceY < 2 {
+					g.State = StateGameOver
+					return
+				}
+			}
+		}
+	}
+}
+
+// spawnNextPiece spawns the next piece and checks for game over
+func (g *Game) spawnNextPiece() {
+	g.CurrentPiece = g.NextPiece
+	g.NextPiece = g.PieceGen.NextPiece()
+
+	// Check for game over - if the new piece can't be placed
+	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
+		g.State = StateGameOver
+	}
 }
 
 // addScore adds to the score based on lines cleared and special moves
