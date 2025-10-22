@@ -31,19 +31,35 @@ help:
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
 	@echo ''
 
-# Build the application
-build:
+# Build all applications
+build: build-desktop build-web
+
+# Build the desktop application
+build-desktop:
 	mkdir -p $(BIN_DIR)
 	go build -o $(BIN_DIR)/$(BINARY_NAME) ./cmd
+
+# Build for web (WebAssembly)
+build-web:
+	mkdir -p $(BIN_DIR)/web
+	GOOS=js GOARCH=wasm go build -o $(BIN_DIR)/web/$(BINARY_NAME).wasm ./cmd
+	cp $$(go env GOROOT)/lib/wasm/wasm_exec.js $(BIN_DIR)/web/
+	cp web/index.html $(BIN_DIR)/web/
 
 # Clean build artifacts
 clean:
 	rm -f $(BIN_DIR)/$(BINARY_NAME)
+	rm -rf $(BIN_DIR)/web
 	rm -rf $(COVERAGE_DIR)
 
 # Run the application
-run: build
+run: build-desktop
 	./$(BIN_DIR)/$(BINARY_NAME)
+
+# Run the web application
+run-web: build-web
+	@echo "Starting web server at http://localhost:8000"
+	cd $(BIN_DIR)/web && python3 -m http.server 8000
 
 # Run all tests
 test:
@@ -134,5 +150,5 @@ build-macos-arm64:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags=headless,ebitennogl,ebitennonscreen -o $(BIN_DIR)/$(BINARY_NAME)_darwin_arm64 ./cmd
 
 # Build for all platforms
-build-all: build build-windows build-macos build-macos-arm64
+build-all: build-desktop build-web build-windows build-macos build-macos-arm64
 	@echo "All builds completed successfully!"
