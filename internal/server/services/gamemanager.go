@@ -243,6 +243,9 @@ func (gm *GameManager) finalizeGame(game *models.GameSession, winnerID string) {
 	gm.sendToPlayer(game.Player1.ID, gameOverMsg)
 	gm.sendToPlayer(game.Player2.ID, gameOverMsg)
 
+	// Update player statistics
+	gm.updatePlayerStats(game, winnerID)
+
 	log.Printf("Game %s finalized, winner: %s (P1: %d, P2: %d)",
 		game.ID, winnerID, game.Player1Score, game.Player2Score)
 }
@@ -376,6 +379,35 @@ func (gm *GameManager) HandlePlayerDisconnect(playerID string) error {
 	}
 
 	return nil
+}
+
+// updatePlayerStats updates player statistics after a game ends
+func (gm *GameManager) updatePlayerStats(game *models.GameSession, winnerID string) {
+	// Update Player 1 stats
+	game.Player1.TotalGames++
+	if game.Player1Score > game.Player1.HighScore {
+		game.Player1.HighScore = game.Player1Score
+	}
+	if winnerID == game.Player1.ID {
+		game.Player1.Wins++
+	} else if winnerID != "" { // Only count as loss if there was a winner (not a draw)
+		game.Player1.Losses++
+	}
+	gm.playerStore.UpdatePlayer(game.Player1)
+
+	// Update Player 2 stats
+	game.Player2.TotalGames++
+	if game.Player2Score > game.Player2.HighScore {
+		game.Player2.HighScore = game.Player2Score
+	}
+	if winnerID == game.Player2.ID {
+		game.Player2.Wins++
+	} else if winnerID != "" { // Only count as loss if there was a winner (not a draw)
+		game.Player2.Losses++
+	}
+	gm.playerStore.UpdatePlayer(game.Player2)
+
+	log.Printf("Updated stats for players %s and %s", game.Player1.Username, game.Player2.Username)
 }
 
 // sendToPlayer sends a message to a specific player via WebSocket

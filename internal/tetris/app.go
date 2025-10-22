@@ -41,6 +41,11 @@ func (g *App) Update() error {
 			// Multiplayer
 			g.game.State = StateMultiplayerSetup
 		}
+		if inpututil.IsKeyJustPressed(ebiten.Key3) {
+			// High Scores
+			g.game.State = StateHighScores
+			go g.game.FetchLeaderboard() // Fetch server leaderboard
+		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 			// Quit (for now, just do nothing)
 		}
@@ -110,6 +115,11 @@ func (g *App) Update() error {
 		}
 	case StateRematchWaiting:
 		// Just wait for server response
+	case StateHighScores:
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			// Back to main menu
+			g.game.State = StateMainMenu
+		}
 	}
 
 	return nil

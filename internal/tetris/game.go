@@ -1,8 +1,10 @@
 package tetris
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 )
 
@@ -15,7 +17,18 @@ const (
 	StatePaused
 	StateGameOver
 	StateRematchWaiting
+	StateHighScores
 )
+
+// LeaderboardEntry represents a leaderboard entry
+type LeaderboardEntry struct {
+	Rank       int    `json:"rank"`
+	Username   string `json:"username"`
+	HighScore  int    `json:"highScore"`
+	TotalGames int    `json:"totalGames"`
+	Wins       int    `json:"wins"`
+	Losses     int    `json:"losses"`
+}
 
 // Game represents the Tetris game state
 type Game struct {
@@ -57,6 +70,13 @@ type Game struct {
 	UsernameInput    string `json:"usernameInput,omitempty"`
 	ConnectionStatus string `json:"connectionStatus,omitempty"`
 	OpponentName     string `json:"opponentName,omitempty"`
+
+	// Local high score (for single player)
+	LocalHighScore int `json:"localHighScore,omitempty"`
+
+	// Server leaderboard data
+	Leaderboard []LeaderboardEntry `json:"leaderboard,omitempty"`
+	ServerURL   string             `json:"serverURL,omitempty"`
 }
 
 // NewGame creates a new Tetris game
@@ -73,6 +93,7 @@ func NewGame() *Game {
 		PieceGen:          NewPieceGenerator(),    // Initialize the 7-bag generator
 		BackToBack:        false,
 		LastClearWasTSpin: false,
+		ServerURL:         "http://localhost:8080", // Default server URL
 	}
 
 	// Initialize pieces
@@ -368,6 +389,12 @@ func (g *Game) lockPiece() {
 
 // handleLocalGameOver handles when the local player loses
 func (g *Game) handleLocalGameOver() {
+	// Update local high score for single player
+	if !g.MultiplayerMode && g.Score > g.LocalHighScore {
+		g.LocalHighScore = g.Score
+		log.Printf("New local high score: %d", g.LocalHighScore)
+	}
+
 	if g.MultiplayerMode && g.MultiplayerClient != nil && g.MultiplayerClient.IsConnected() {
 		// In multiplayer, notify server that we lost
 		log.Printf("Game: Local player lost, notifying server")
@@ -825,6 +852,36 @@ func (g *Game) handleRematchStart(message map[string]interface{}) {
 	// Reset game state for rematch
 	g.Start()
 	log.Printf("Game: Rematch started")
+}
+
+// FetchLeaderboard fetches the server leaderboard
+func (g *Game) FetchLeaderboard() {
+	// Make HTTP request to leaderboard endpoint
+	resp, err := http.Get(g.ServerURL + "/api/leaderboard?limit=10")
+	if err != nil {
+		log.Printf("Failed to fetch leaderboard (server may not be running): %v", err)
+		// Set empty leaderboard to show "No server scores available"
+		g.Leaderboard = []LeaderboardEntry{}
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Leaderboard request failed with status: %d", resp.StatusCode)
+		g.Leaderboard = []LeaderboardEntry{}
+		return
+	}
+
+	var leaderboard []LeaderboardEntry
+	err = json.NewDecoder(resp.Body).Decode(&leaderboard)
+	if err != nil {
+		log.Printf("Failed to parse leaderboard response: %v", err)
+		g.Leaderboard = []LeaderboardEntry{}
+		return
+	}
+
+	g.Leaderboard = leaderboard
+	log.Printf("Fetched leaderboard with %d entries", len(leaderboard))
 }
 
 // handleOpponentDisconnected processes opponent disconnect message

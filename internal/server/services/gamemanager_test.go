@@ -277,3 +277,75 @@ func TestHandlePlayerDisconnectNoActiveGame(t *testing.T) {
 
 	// Should handle gracefully with no errors
 }
+
+func TestUpdatePlayerStats(t *testing.T) {
+	// Setup
+	gameStore := memory.NewGameStore()
+	playerStore := memory.NewPlayerStore()
+	wsManager := NewWebSocketManager()
+	gm := NewGameManager(gameStore, playerStore, wsManager)
+
+	// Create players with initial stats
+	player1 := &models.Player{
+		ID:         "stats_player1",
+		Username:   "TestUser1",
+		TotalGames: 0,
+		Wins:       0,
+		Losses:     0,
+		HighScore:  500,
+	}
+	player2 := &models.Player{
+		ID:         "stats_player2",
+		Username:   "TestUser2",
+		TotalGames: 1,
+		Wins:       1,
+		Losses:     0,
+		HighScore:  800,
+	}
+
+	playerStore.CreatePlayer(player1)
+	playerStore.CreatePlayer(player2)
+
+	// Create game session
+	game := &models.GameSession{
+		ID:           "stats_game",
+		Player1:      player1,
+		Player2:      player2,
+		Player1Score: 1200, // New high score for player1
+		Player2Score: 600,  // Lower than existing high score
+		Status:       models.GameStatusFinished,
+	}
+
+	// Update stats with player1 as winner
+	gm.updatePlayerStats(game, "stats_player1")
+
+	// Verify player1 stats updated correctly
+	updatedPlayer1, _ := playerStore.GetPlayer("stats_player1")
+	if updatedPlayer1.TotalGames != 1 {
+		t.Errorf("Expected player1 TotalGames to be 1, got %d", updatedPlayer1.TotalGames)
+	}
+	if updatedPlayer1.Wins != 1 {
+		t.Errorf("Expected player1 Wins to be 1, got %d", updatedPlayer1.Wins)
+	}
+	if updatedPlayer1.Losses != 0 {
+		t.Errorf("Expected player1 Losses to be 0, got %d", updatedPlayer1.Losses)
+	}
+	if updatedPlayer1.HighScore != 1200 {
+		t.Errorf("Expected player1 HighScore to be 1200, got %d", updatedPlayer1.HighScore)
+	}
+
+	// Verify player2 stats updated correctly
+	updatedPlayer2, _ := playerStore.GetPlayer("stats_player2")
+	if updatedPlayer2.TotalGames != 2 {
+		t.Errorf("Expected player2 TotalGames to be 2, got %d", updatedPlayer2.TotalGames)
+	}
+	if updatedPlayer2.Wins != 1 {
+		t.Errorf("Expected player2 Wins to remain 1, got %d", updatedPlayer2.Wins)
+	}
+	if updatedPlayer2.Losses != 1 {
+		t.Errorf("Expected player2 Losses to be 1, got %d", updatedPlayer2.Losses)
+	}
+	if updatedPlayer2.HighScore != 800 {
+		t.Errorf("Expected player2 HighScore to remain 800, got %d", updatedPlayer2.HighScore)
+	}
+}

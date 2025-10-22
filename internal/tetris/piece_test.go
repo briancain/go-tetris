@@ -260,7 +260,7 @@ func TestPieceGeneratorSetSeed(t *testing.T) {
 		piece2 := gen2.NextPiece()
 
 		if piece1.Type != piece2.Type {
-			t.Errorf("Generators with same seed should produce identical pieces at position %d: got %d vs %d", 
+			t.Errorf("Generators with same seed should produce identical pieces at position %d: got %d vs %d",
 				i, piece1.Type, piece2.Type)
 		}
 	}
@@ -275,7 +275,7 @@ func TestPieceGeneratorSetSeed(t *testing.T) {
 		piece2 := gen2.NextPiece()
 
 		if piece1.Type != piece2.Type {
-			t.Errorf("Generators should produce identical pieces after seed change at position %d: got %d vs %d", 
+			t.Errorf("Generators should produce identical pieces after seed change at position %d: got %d vs %d",
 				i, piece1.Type, piece2.Type)
 		}
 	}

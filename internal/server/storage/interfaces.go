@@ -9,6 +9,7 @@ type PlayerStore interface {
 	GetPlayerByToken(token string) (*models.Player, error)
 	UpdatePlayer(player *models.Player) error
 	DeletePlayer(id string) error
+	GetAllPlayers() ([]*models.Player, error)
 }
 
 // GameStore handles game session persistence

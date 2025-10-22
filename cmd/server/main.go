@@ -30,6 +30,7 @@ func main() {
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
+	leaderboardHandler := handlers.NewLeaderboardHandler(playerStore)
 	wsHandler := handlers.NewWebSocketHandler(wsManager, authService, gameManager)
 
 	// Setup routes
@@ -39,6 +40,8 @@ func main() {
 	http.HandleFunc("/api/matchmaking/queue", authMiddleware.RequireAuth(matchmakingHandler.JoinQueue))
 	http.HandleFunc("/api/matchmaking/queue/leave", authMiddleware.RequireAuth(matchmakingHandler.LeaveQueue))
 	http.HandleFunc("/api/matchmaking/status", authMiddleware.RequireAuth(matchmakingHandler.GetQueueStatus))
+
+	http.HandleFunc("/api/leaderboard", leaderboardHandler.GetLeaderboard)
 
 	http.HandleFunc("/ws", wsHandler.HandleWebSocket)
 

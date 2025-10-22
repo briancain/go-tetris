@@ -89,3 +89,16 @@ func (s *PlayerStore) DeletePlayer(id string) error {
 	delete(s.tokens, player.SessionToken)
 	return nil
 }
+
+// GetAllPlayers returns all players
+func (s *PlayerStore) GetAllPlayers() ([]*models.Player, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var players []*models.Player
+	for _, player := range s.players {
+		players = append(players, player)
+	}
+
+	return players, nil
+}

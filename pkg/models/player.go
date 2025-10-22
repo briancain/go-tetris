@@ -10,6 +10,11 @@ type Player struct {
 	ConnectedAt  time.Time `json:"connectedAt"`
 	InQueue      bool      `json:"inQueue"`
 	GameID       string    `json:"gameId,omitempty"`
+	// Stats
+	TotalGames int `json:"totalGames"`
+	Wins       int `json:"wins"`
+	Losses     int `json:"losses"`
+	HighScore  int `json:"highScore"`
 }
 
 // GameSession represents an active game between two players

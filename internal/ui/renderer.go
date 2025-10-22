@@ -104,6 +104,8 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 	case tetris.StateRematchWaiting:
 		r.drawGame(screen)
 		r.drawRematchWaitingOverlay(screen)
+	case tetris.StateHighScores:
+		r.drawHighScores(screen)
 	}
 }
 
@@ -146,14 +148,19 @@ func (r *Renderer) drawMainMenu(screen *ebiten.Image) {
 	y = ScreenHeight/2 + 10
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
-	msg = "ESC. Quit"
+	msg = "3. High Scores"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y = ScreenHeight/2 + 30
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
+	msg = "ESC. Quit"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight/2 + 50
+	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
 	msg = "Controls:"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y += 40
+	y += 60
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Arrow Keys: Move"
@@ -559,7 +566,7 @@ func (r *Renderer) drawSmallEmptyCell(screen *ebiten.Image, x, y int) {
 // drawGameStats draws the game statistics
 func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 	// Calculate box height based on multiplayer mode
-	boxHeight := float32(160) // Default height
+	boxHeight := float32(220) // Increased for local high score display + padding
 	if r.game.MultiplayerMode {
 		boxHeight = 280 // Taller for player names and status
 	}
@@ -625,7 +632,7 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 	}
 
 	// Draw score
-	scoreY := PreviewY + 190
+	scoreY := PreviewY + 100 // Start right after preview area for single player
 	if r.game.MultiplayerMode {
 		scoreY = PreviewY + 220 // Adjust for player status and target score
 		if (r.game.LocalPlayerLost || r.game.OpponentLost) && r.game.LoserScore > 0 {
@@ -653,6 +660,12 @@ func (r *Renderer) drawGameStats(screen *ebiten.Image) {
 	// Draw last clear type
 	if r.game.GetLastClearWasTSpin() {
 		text.Draw(screen, "T-Spin!", r.font, PreviewX-5, linesY+60, color.RGBA{255, 105, 180, 255}) // Hot pink
+	}
+
+	// Draw local high score for single player
+	if !r.game.MultiplayerMode && r.game.LocalHighScore > 0 {
+		text.Draw(screen, "High Score:", r.font, PreviewX-5, linesY+80, color.RGBA{255, 215, 0, 255}) // Gold
+		text.Draw(screen, fmt.Sprintf("%d", r.game.LocalHighScore), r.font, PreviewX+5, linesY+100, color.RGBA{255, 215, 0, 255})
 	}
 }
 
@@ -757,6 +770,64 @@ func (r *Renderer) drawRematchWaitingOverlay(screen *ebiten.Image) {
 	x = (ScreenWidth - len(msg)*7) / 2
 	y += 30
 	text.Draw(screen, msg, r.font, x, y, color.RGBA{255, 215, 0, 255}) // Gold
+}
+
+// drawHighScores draws the high scores screen
+func (r *Renderer) drawHighScores(screen *ebiten.Image) {
+	// Title
+	msg := "HIGH SCORES"
+	x := (ScreenWidth - len(msg)*7) / 2
+	y := 40
+	text.Draw(screen, msg, r.font, x, y, color.White)
+
+	// Local high score (single player)
+	y += 40
+	if r.game.LocalHighScore > 0 {
+		msg = fmt.Sprintf("Local Best: %d", r.game.LocalHighScore)
+		x = (ScreenWidth - len(msg)*7) / 2
+		text.Draw(screen, msg, r.font, x, y, color.RGBA{255, 215, 0, 255}) // Gold
+	} else {
+		msg = "No local scores yet"
+		x = (ScreenWidth - len(msg)*7) / 2
+		text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // Gray
+	}
+
+	// Server leaderboard
+	y += 40
+	msg = "Server Leaderboard:"
+	x = (ScreenWidth - len(msg)*7) / 2
+	text.Draw(screen, msg, r.font, x, y, color.White)
+
+	if len(r.game.Leaderboard) > 0 {
+		y += 20
+		for i, entry := range r.game.Leaderboard {
+			if i >= 8 { // Limit to top 8 to fit on screen
+				break
+			}
+			msg = fmt.Sprintf("%d. %s - %d", entry.Rank, entry.Username, entry.HighScore)
+			x = (ScreenWidth - len(msg)*7) / 2
+			y += 15
+			text.Draw(screen, msg, r.font, x, y, color.White)
+		}
+	} else if r.game.Leaderboard != nil {
+		// Empty slice means server responded but no scores
+		y += 20
+		msg = "No server scores yet"
+		x = (ScreenWidth - len(msg)*7) / 2
+		text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // Gray
+	} else {
+		// nil means still loading or server unavailable
+		y += 20
+		msg = "Loading server scores..."
+		x = (ScreenWidth - len(msg)*7) / 2
+		text.Draw(screen, msg, r.font, x, y, color.RGBA{128, 128, 128, 255}) // Gray
+	}
+
+	// Back instruction
+	msg = "Press ESC to return to menu"
+	x = (ScreenWidth - len(msg)*7) / 2
+	y = ScreenHeight - 40
+	text.Draw(screen, msg, r.font, x, y, color.White)
 }
 
 // drawMultiplayerSetup draws the multiplayer setup screen
