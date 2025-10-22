@@ -173,5 +173,5 @@ build-macos-arm64:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags=headless,ebitennogl,ebitennonscreen -o $(BIN_DIR)/$(BINARY_NAME)_darwin_arm64 ./cmd
 
 # Build for all platforms
-build-all: build-desktop build-web build-windows build-macos build-macos-arm64
+build-all: build-desktop build-web build-server
 	@echo "All builds completed successfully!"

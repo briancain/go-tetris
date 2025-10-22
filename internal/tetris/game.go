@@ -1,6 +1,8 @@
 package tetris
 
 import (
+	"fmt"
+	"log"
 	"time"
 )
 
@@ -34,6 +36,14 @@ type Game struct {
 	PieceGen          *PieceGenerator // 7-bag piece generator
 	BackToBack        bool            // Track back-to-back special clears
 	LastClearWasTSpin bool            // Track if the last clear was a T-spin
+
+	// Multiplayer fields
+	MultiplayerMode   bool               `json:"multiplayerMode"`
+	MultiplayerClient *MultiplayerClient `json:"-"` // Don't serialize WebSocket connection
+	OpponentBoard     [][]Cell           `json:"opponentBoard,omitempty"`
+	OpponentScore     int                `json:"opponentScore,omitempty"`
+	OpponentLevel     int                `json:"opponentLevel,omitempty"`
+	OpponentLines     int                `json:"opponentLines,omitempty"`
 }
 
 // NewGame creates a new Tetris game
@@ -99,6 +109,11 @@ func (g *Game) Start() {
 
 // Update updates the game state
 func (g *Game) Update() {
+	// Process multiplayer messages
+	if g.MultiplayerMode {
+		g.ProcessMultiplayerMessages()
+	}
+
 	if g.State != StatePlaying {
 		return
 	}
@@ -152,6 +167,7 @@ func (g *Game) MoveLeft() bool {
 
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		g.CurrentPiece.Move(-1, 0)
+		g.sendMoveToServer("left")
 		return true
 	}
 
@@ -170,6 +186,7 @@ func (g *Game) MoveRight() bool {
 
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		g.CurrentPiece.Move(1, 0)
+		g.sendMoveToServer("right")
 		return true
 	}
 
@@ -202,6 +219,7 @@ func (g *Game) RotatePiece() bool {
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		// Apply the rotation to the actual piece
 		g.CurrentPiece.Rotate()
+		g.sendMoveToServer("rotate")
 		return true
 	}
 
@@ -225,6 +243,7 @@ func (g *Game) RotatePiece() bool {
 			g.CurrentPiece.Rotate()
 			g.CurrentPiece.X += offset[0]
 			g.CurrentPiece.Y += offset[1]
+			g.sendMoveToServer("rotate")
 			return true
 		}
 	}
@@ -251,6 +270,7 @@ func (g *Game) HardDrop() {
 	// Add score based on distance
 	g.Score += distance
 
+	g.sendMoveToServer("hard_drop")
 	g.lockPiece()
 
 	// Check for completed lines
@@ -258,6 +278,9 @@ func (g *Game) HardDrop() {
 	if linesCleared > 0 {
 		g.addScore(linesCleared)
 	}
+
+	// Send updated state to server
+	g.sendStateToServer()
 
 	// Check for game over
 	g.CurrentPiece = g.NextPiece
@@ -491,4 +514,181 @@ func (g *Game) GetGhostPieceY() int {
 	}
 
 	return ghostY
+}
+
+// EnableMultiplayer enables multiplayer mode with server connection
+func (g *Game) EnableMultiplayer(serverURL string) error {
+	if g.MultiplayerClient != nil {
+		g.MultiplayerClient.Close()
+	}
+
+	g.MultiplayerClient = NewMultiplayerClient(serverURL)
+	g.MultiplayerMode = true
+
+	// Initialize opponent board
+	g.OpponentBoard = make([][]Cell, BoardHeightWithBuffer)
+	for i := range g.OpponentBoard {
+		g.OpponentBoard[i] = make([]Cell, BoardWidth)
+	}
+
+	return nil
+}
+
+// ConnectToServer connects to the multiplayer server
+func (g *Game) ConnectToServer(username string) error {
+	if g.MultiplayerClient == nil {
+		return fmt.Errorf("multiplayer not enabled")
+	}
+
+	err := g.MultiplayerClient.Login(username)
+	if err != nil {
+		return err
+	}
+
+	return g.MultiplayerClient.Connect()
+}
+
+// JoinMatchmaking joins the matchmaking queue
+func (g *Game) JoinMatchmaking() error {
+	if g.MultiplayerClient == nil {
+		return fmt.Errorf("multiplayer not enabled")
+	}
+
+	return g.MultiplayerClient.JoinQueue()
+}
+
+// ProcessMultiplayerMessages processes incoming server messages
+func (g *Game) ProcessMultiplayerMessages() {
+	if g.MultiplayerClient == nil {
+		return
+	}
+
+	for {
+		message := g.MultiplayerClient.GetMessage()
+		if message == nil {
+			break // No more messages
+		}
+
+		g.handleMultiplayerMessage(message)
+	}
+}
+
+// HandleMultiplayerMessage handles a single multiplayer message (public for testing)
+func (g *Game) HandleMultiplayerMessage(message map[string]interface{}) {
+	g.handleMultiplayerMessage(message)
+}
+
+// handleMultiplayerMessage handles a single multiplayer message (internal)
+func (g *Game) handleMultiplayerMessage(message map[string]interface{}) {
+	msgType, ok := message["type"].(string)
+	if !ok {
+		return
+	}
+
+	switch msgType {
+	case "match_found":
+		g.handleMatchFound(message)
+	case "game_move":
+		g.handleOpponentMove(message)
+	case "game_state":
+		g.handleOpponentState(message)
+	case "game_over":
+		g.handleGameOver(message)
+	}
+}
+
+// handleMatchFound processes match found message
+func (g *Game) handleMatchFound(message map[string]interface{}) {
+	seed, ok := message["seed"].(float64)
+	if ok {
+		// Use server-provided seed
+		g.PieceGen = NewPieceGeneratorWithSeed(int64(seed))
+		g.NextPiece = g.PieceGen.NextPiece()
+		log.Printf("Game: Using server seed: %.0f", seed)
+	}
+
+	opponent, ok := message["opponent"].(string)
+	if ok {
+		log.Printf("Game: Matched with opponent: %s", opponent)
+	}
+
+	// Start the game
+	g.Start()
+}
+
+// handleOpponentMove processes opponent move
+func (g *Game) handleOpponentMove(message map[string]interface{}) {
+	moveType, ok := message["moveType"].(string)
+	if ok {
+		log.Printf("Game: Opponent move: %s", moveType)
+		// In a full implementation, you might want to show opponent moves visually
+	}
+}
+
+// handleOpponentState processes opponent game state
+func (g *Game) handleOpponentState(message map[string]interface{}) {
+	// Update opponent score
+	if score, ok := message["score"].(float64); ok {
+		g.OpponentScore = int(score)
+	}
+
+	// Update opponent level
+	if level, ok := message["level"].(float64); ok {
+		g.OpponentLevel = int(level)
+	}
+
+	// Update opponent lines
+	if lines, ok := message["lines"].(float64); ok {
+		g.OpponentLines = int(lines)
+	}
+
+	// Update opponent board
+	if boardInterface, ok := message["board"].([]interface{}); ok {
+		for i, rowInterface := range boardInterface {
+			if i >= len(g.OpponentBoard) {
+				break
+			}
+			if row, ok := rowInterface.([]interface{}); ok {
+				for j, cellInterface := range row {
+					if j >= len(g.OpponentBoard[i]) {
+						break
+					}
+					if cellValue, ok := cellInterface.(float64); ok {
+						g.OpponentBoard[i][j] = Cell(int(cellValue))
+					}
+				}
+			}
+		}
+	}
+}
+
+// handleGameOver processes game over message
+func (g *Game) handleGameOver(message map[string]interface{}) {
+	winnerID, ok := message["winnerId"].(string)
+	if ok {
+		log.Printf("Game: Game over, winner: %s", winnerID)
+	}
+
+	// End the game
+	g.State = StateGameOver
+}
+
+// sendMoveToServer sends a move to the server
+func (g *Game) sendMoveToServer(moveType string) {
+	if g.MultiplayerClient != nil && g.MultiplayerClient.IsConnected() {
+		g.MultiplayerClient.SendGameMove(moveType)
+	}
+}
+
+// sendStateToServer sends current game state to server
+func (g *Game) sendStateToServer() {
+	if g.MultiplayerClient != nil && g.MultiplayerClient.IsConnected() {
+		// Convert board array to slice
+		board := make([][]Cell, len(g.Board.Cells))
+		for i, row := range g.Board.Cells {
+			board[i] = make([]Cell, len(row))
+			copy(board[i], row[:])
+		}
+		g.MultiplayerClient.SendGameState(board, g.Score, g.Level, g.LinesCleared)
+	}
 }
