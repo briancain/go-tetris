@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"testing"
 
 	"github.com/redis/go-redis/v9"
@@ -10,6 +11,10 @@ func TestQueueStore_AddToQueue(t *testing.T) {
 	// Use Redis mock for unit testing
 	client := &Client{Client: redis.NewClient(&redis.Options{Addr: "localhost:6379"})}
 	store := NewQueueStore(client)
+
+	// Clear entire queue before test
+	ctx := context.Background()
+	client.Del(ctx, "matchmaking:queue")
 
 	// Test adding player to queue
 	err := store.AddToQueue("player1")
