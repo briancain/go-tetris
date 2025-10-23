@@ -4,8 +4,6 @@
 
 A Tetris clone written in Go using the Ebiten game library. Compliant with the official Tetris Guidelines.
 
-Made with Amazon Q
-
 ## Features
 
 - Classic Tetris gameplay following official Tetris Guidelines
