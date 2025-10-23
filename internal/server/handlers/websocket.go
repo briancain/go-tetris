@@ -103,6 +103,15 @@ func (h *WebSocketHandler) handleMessages(playerID string, conn *websocket.Conn)
 			break
 		}
 
+		// Update player activity on any message
+		err = h.authService.UpdatePlayerActivity(playerID)
+		if err != nil {
+			logger.Logger.Error("Failed to update player activity",
+				"playerID", playerID,
+				"error", err,
+			)
+		}
+
 		// Parse message
 		var message map[string]interface{}
 		err = json.Unmarshal(messageData, &message)

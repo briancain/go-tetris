@@ -6,6 +6,7 @@ import "github.com/briancain/go-tetris/pkg/models"
 type PlayerStore interface {
 	CreatePlayer(player *models.Player) error
 	GetPlayer(id string) (*models.Player, error)
+	GetPlayerByUsername(username string) (*models.Player, error)
 	GetPlayerByToken(token string) (*models.Player, error)
 	UpdatePlayer(player *models.Player) error
 	DeletePlayer(id string) error

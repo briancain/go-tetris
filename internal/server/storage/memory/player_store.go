@@ -49,6 +49,20 @@ func (s *PlayerStore) GetPlayer(id string) (*models.Player, error) {
 	return player, nil
 }
 
+// GetPlayerByUsername retrieves a player by username
+func (s *PlayerStore) GetPlayerByUsername(username string) (*models.Player, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, player := range s.players {
+		if player.Username == username {
+			return player, nil
+		}
+	}
+
+	return nil, errors.New("player not found")
+}
+
 // GetPlayerByToken retrieves a player by session token
 func (s *PlayerStore) GetPlayerByToken(token string) (*models.Player, error) {
 	s.mu.RLock()

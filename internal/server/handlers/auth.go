@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/briancain/go-tetris/internal/server/logger"
@@ -67,6 +68,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Create player session
 	player, err := h.authService.Login(req.Username)
 	if err != nil {
+		// Check if it's a username conflict error
+		if err.Error() == fmt.Sprintf("username '%s' is already in use", req.Username) {
+			logger.Logger.Warn("Login attempt with username already in use",
+				"requestID", requestID,
+				"username", req.Username,
+			)
+			http.Error(w, "Username is already in use. Please choose a different username.", http.StatusConflict)
+			return
+		}
+
 		logger.Logger.Error("Failed to create player session",
 			"requestID", requestID,
 			"username", req.Username,

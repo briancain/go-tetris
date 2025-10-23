@@ -8,6 +8,7 @@ type Player struct {
 	Username     string    `json:"username"`
 	SessionToken string    `json:"sessionToken"`
 	ConnectedAt  time.Time `json:"connectedAt"`
+	LastActivity time.Time `json:"lastActivity"`
 	InQueue      bool      `json:"inQueue"`
 	GameID       string    `json:"gameId,omitempty"`
 	// Stats
