@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/briancain/go-tetris/internal/server/services"
+	"github.com/briancain/go-tetris/internal/server/storage"
 )
 
 type HealthHandler struct {
-	wsManager *services.WebSocketManager
+	wsManager     *services.WebSocketManager
+	storageHealth storage.HealthChecker
 }
 
 type HealthResponse struct {
@@ -28,9 +30,10 @@ type MetricsResponse struct {
 
 var startTime = time.Now()
 
-func NewHealthHandler(wsManager *services.WebSocketManager) *HealthHandler {
+func NewHealthHandler(wsManager *services.WebSocketManager, storageHealth storage.HealthChecker) *HealthHandler {
 	return &HealthHandler{
-		wsManager: wsManager,
+		wsManager:     wsManager,
+		storageHealth: storageHealth,
 	}
 }
 
@@ -46,8 +49,18 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 		status = "degraded"
 	}
 
-	// TODO: Add Redis connectivity check when Redis is implemented
-	checks["redis"] = "not_implemented"
+	// Check storage health
+	if h.storageHealth != nil {
+		if err := h.storageHealth.HealthCheck(); err != nil {
+			checks["storage"] = "error: " + err.Error()
+			status = "unhealthy"
+		} else {
+			checks["storage"] = "ok"
+		}
+	} else {
+		checks["storage"] = "unavailable"
+		status = "degraded"
+	}
 
 	response := HealthResponse{
 		Status:      status,

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,9 +10,22 @@ import (
 	"github.com/briancain/go-tetris/internal/server/services"
 )
 
+// mockHealthChecker for testing
+type mockHealthChecker struct {
+	shouldFail bool
+}
+
+func (m *mockHealthChecker) HealthCheck() error {
+	if m.shouldFail {
+		return errors.New("storage connection failed")
+	}
+	return nil
+}
+
 func TestHealthHandler_Health(t *testing.T) {
 	wsManager := services.NewWebSocketManager()
-	handler := NewHealthHandler(wsManager)
+	healthChecker := &mockHealthChecker{}
+	handler := NewHealthHandler(wsManager, healthChecker)
 
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
@@ -44,13 +58,14 @@ func TestHealthHandler_Health(t *testing.T) {
 		t.Errorf("Expected websocket_manager check to be 'ok', got '%s'", response.Checks["websocket_manager"])
 	}
 
-	if response.Checks["redis"] != "not_implemented" {
-		t.Errorf("Expected redis check to be 'not_implemented', got '%s'", response.Checks["redis"])
+	if response.Checks["storage"] != "ok" {
+		t.Errorf("Expected storage check to be 'ok', got '%s'", response.Checks["storage"])
 	}
 }
 
 func TestHealthHandler_HealthWithNilWebSocketManager(t *testing.T) {
-	handler := NewHealthHandler(nil)
+	healthChecker := &mockHealthChecker{}
+	handler := NewHealthHandler(nil, healthChecker)
 
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
@@ -82,7 +97,8 @@ func TestHealthHandler_HealthWithNilWebSocketManager(t *testing.T) {
 
 func TestHealthHandler_Metrics(t *testing.T) {
 	wsManager := services.NewWebSocketManager()
-	handler := NewHealthHandler(wsManager)
+	healthChecker := &mockHealthChecker{}
+	handler := NewHealthHandler(wsManager, healthChecker)
 
 	req := httptest.NewRequest("GET", "/metrics", nil)
 	w := httptest.NewRecorder()
@@ -113,7 +129,8 @@ func TestHealthHandler_Metrics(t *testing.T) {
 }
 
 func TestHealthHandler_MetricsWithNilWebSocketManager(t *testing.T) {
-	handler := NewHealthHandler(nil)
+	healthChecker := &mockHealthChecker{}
+	handler := NewHealthHandler(nil, healthChecker)
 
 	req := httptest.NewRequest("GET", "/metrics", nil)
 	w := httptest.NewRecorder()
@@ -137,7 +154,8 @@ func TestHealthHandler_MetricsWithNilWebSocketManager(t *testing.T) {
 
 func TestHealthHandler_ContentType(t *testing.T) {
 	wsManager := services.NewWebSocketManager()
-	handler := NewHealthHandler(wsManager)
+	healthChecker := &mockHealthChecker{}
+	handler := NewHealthHandler(wsManager, healthChecker)
 
 	tests := []struct {
 		name     string
@@ -186,7 +204,8 @@ func TestHealthHandler_FailureScenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHealthHandler(tt.wsManager)
+			healthChecker := &mockHealthChecker{}
+			handler := NewHealthHandler(tt.wsManager, healthChecker)
 			req := httptest.NewRequest("GET", "/health", nil)
 			w := httptest.NewRecorder()
 
@@ -206,5 +225,33 @@ func TestHealthHandler_FailureScenarios(t *testing.T) {
 				t.Errorf("Expected health status '%s', got '%s'", tt.expectedHealth, response.Status)
 			}
 		})
+	}
+}
+
+func TestHealthHandler_StorageHealthCheckFailure(t *testing.T) {
+	wsManager := services.NewWebSocketManager()
+	healthChecker := &mockHealthChecker{shouldFail: true}
+	handler := NewHealthHandler(wsManager, healthChecker)
+
+	req := httptest.NewRequest("GET", "/health", nil)
+	w := httptest.NewRecorder()
+
+	handler.Health(w, req)
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("Expected status %d, got %d", http.StatusServiceUnavailable, w.Code)
+	}
+
+	var response HealthResponse
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if response.Status != "unhealthy" {
+		t.Errorf("Expected status 'unhealthy', got '%s'", response.Status)
+	}
+
+	if response.Checks["storage"] != "error: storage connection failed" {
+		t.Errorf("Expected storage error message, got '%s'", response.Checks["storage"])
 	}
 }

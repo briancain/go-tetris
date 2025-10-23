@@ -14,6 +14,11 @@ type PlayerStore struct {
 	mu      sync.RWMutex
 }
 
+// HealthCheck always returns nil for in-memory storage
+func (s *PlayerStore) HealthCheck() error {
+	return nil
+}
+
 // NewPlayerStore creates a new in-memory player store
 func NewPlayerStore() *PlayerStore {
 	return &PlayerStore{

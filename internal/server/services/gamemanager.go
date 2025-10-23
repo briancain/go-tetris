@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/briancain/go-tetris/internal/server/logger"
@@ -17,6 +18,7 @@ type GameManager struct {
 	gameStore   storage.GameStore
 	playerStore storage.PlayerStore
 	wsManager   *WebSocketManager
+	mu          sync.RWMutex // Protects concurrent game operations
 }
 
 // NewGameManager creates a new game manager
@@ -72,6 +74,9 @@ func (gm *GameManager) StartGame(game *models.GameSession) {
 
 // HandleGameMove processes a player's move
 func (gm *GameManager) HandleGameMove(playerID string, move *models.GameMove) error {
+	gm.mu.Lock()
+	defer gm.mu.Unlock()
+
 	// Get player
 	player, err := gm.playerStore.GetPlayer(playerID)
 	if err != nil {
@@ -112,6 +117,9 @@ func (gm *GameManager) HandleGameMove(playerID string, move *models.GameMove) er
 
 // HandleGameState processes a player's game state update
 func (gm *GameManager) HandleGameState(playerID string, state *models.GameState) error {
+	gm.mu.Lock()
+	defer gm.mu.Unlock()
+
 	// Get player
 	player, err := gm.playerStore.GetPlayer(playerID)
 	if err != nil {
@@ -166,6 +174,9 @@ func (gm *GameManager) HandleGameState(playerID string, state *models.GameState)
 
 // EndGame handles when a player loses
 func (gm *GameManager) EndGame(gameID, loserID string) error {
+	gm.mu.Lock()
+	defer gm.mu.Unlock()
+
 	game, err := gm.gameStore.GetGame(gameID)
 	if err != nil {
 		return err
@@ -274,6 +285,9 @@ func (gm *GameManager) finalizeGame(game *models.GameSession, winnerID string) {
 
 // HandleRematchRequest processes a rematch request from a player
 func (gm *GameManager) HandleRematchRequest(playerID string) error {
+	gm.mu.Lock()
+	defer gm.mu.Unlock()
+
 	// Find the most recent finished game for this player
 	games, err := gm.gameStore.GetAllGames()
 	if err != nil {
@@ -383,6 +397,9 @@ func (gm *GameManager) startRematch(oldGame *models.GameSession) {
 
 // HandlePlayerDisconnect handles when a player disconnects mid-game
 func (gm *GameManager) HandlePlayerDisconnect(playerID string) error {
+	gm.mu.Lock()
+	defer gm.mu.Unlock()
+
 	// Find any active game this player is in
 	games, err := gm.gameStore.GetActiveGames()
 	if err != nil {

@@ -45,7 +45,7 @@ func main() {
 	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
 	leaderboardHandler := handlers.NewLeaderboardHandler(playerStore)
 	wsHandler := handlers.NewWebSocketHandler(wsManager, authService, gameManager)
-	healthHandler := handlers.NewHealthHandler(wsManager)
+	healthHandler := handlers.NewHealthHandler(wsManager, playerStore)
 
 	// Setup routes with logging middleware
 	http.HandleFunc("/api/auth/login", middleware.RequestLogging(authHandler.Login))

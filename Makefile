@@ -175,3 +175,18 @@ build-macos-arm64:
 # Build for all platforms
 build-all: build-desktop build-web build-server
 	@echo "All builds completed successfully!"
+
+# Infrastructure management
+.PHONY: infra-up infra-down infra-logs infra-clean
+
+infra-up:
+	finch compose up -d
+
+infra-down:
+	finch compose down
+
+infra-logs:
+	finch compose logs -f
+
+infra-clean:
+	finch compose down -v
