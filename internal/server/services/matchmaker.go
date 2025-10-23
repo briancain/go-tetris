@@ -2,6 +2,7 @@ package services
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/briancain/go-tetris/internal/server/storage"
@@ -14,6 +15,7 @@ type MatchmakingService struct {
 	gameStore   storage.GameStore
 	queueStore  storage.QueueStore
 	gameManager *GameManager
+	mu          sync.Mutex // Protects matchmaking operations
 }
 
 // NewMatchmakingService creates a new matchmaking service
@@ -88,6 +90,9 @@ func (s *MatchmakingService) GetQueueStatus(playerID string) (int, error) {
 
 // tryMatchmaking attempts to create matches from queued players
 func (s *MatchmakingService) tryMatchmaking() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	queuedPlayers, err := s.queueStore.GetQueuedPlayers()
 	if err != nil || len(queuedPlayers) < 2 {
 		return
