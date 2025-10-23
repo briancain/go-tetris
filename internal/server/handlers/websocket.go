@@ -304,4 +304,22 @@ func (h *WebSocketHandler) handlePlayerDisconnect(playerID string) {
 			"error", err,
 		)
 	}
+
+	// Clean up player session to allow reconnection with same username
+	player, err := h.authService.GetPlayerByID(playerID)
+	if err == nil && player != nil {
+		err = h.authService.DeletePlayer(player.ID)
+		if err != nil {
+			logger.Logger.Error("Failed to clean up disconnected player",
+				"playerID", playerID,
+				"username", player.Username,
+				"error", err,
+			)
+		} else {
+			logger.Logger.Info("Cleaned up disconnected player session",
+				"playerID", playerID,
+				"username", player.Username,
+			)
+		}
+	}
 }

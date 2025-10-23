@@ -3,12 +3,14 @@ package services
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/briancain/go-tetris/internal/server/storage"
 	"github.com/briancain/go-tetris/pkg/models"
 )
+
+var ErrUsernameInUse = errors.New("username is already in use")
 
 // AuthService handles player authentication
 type AuthService struct {
@@ -30,7 +32,7 @@ func (s *AuthService) Login(username string) (*models.Player, error) {
 		// Username exists, check if player is still active
 		// For now, we'll consider any existing player as active
 		// In a production system, you might want to check last activity time
-		return nil, fmt.Errorf("username '%s' is already in use", username)
+		return nil, ErrUsernameInUse
 	}
 
 	// Generate unique player ID and session token
@@ -57,6 +59,16 @@ func (s *AuthService) Login(username string) (*models.Player, error) {
 // ValidateToken checks if a session token is valid and returns the player
 func (s *AuthService) ValidateToken(token string) (*models.Player, error) {
 	return s.playerStore.GetPlayerByToken(token)
+}
+
+// GetPlayerByID retrieves a player by their ID
+func (s *AuthService) GetPlayerByID(playerID string) (*models.Player, error) {
+	return s.playerStore.GetPlayer(playerID)
+}
+
+// DeletePlayer removes a player session
+func (s *AuthService) DeletePlayer(playerID string) error {
+	return s.playerStore.DeletePlayer(playerID)
 }
 
 // Logout removes a player session

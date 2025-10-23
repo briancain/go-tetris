@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/briancain/go-tetris/internal/server/logger"
@@ -69,7 +69,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	player, err := h.authService.Login(req.Username)
 	if err != nil {
 		// Check if it's a username conflict error
-		if err.Error() == fmt.Sprintf("username '%s' is already in use", req.Username) {
+		if errors.Is(err, services.ErrUsernameInUse) {
 			logger.Logger.Warn("Login attempt with username already in use",
 				"requestID", requestID,
 				"username", req.Username,

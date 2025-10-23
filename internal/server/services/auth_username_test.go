@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -45,9 +46,8 @@ func TestAuthService_UsernameConflicts(t *testing.T) {
 			t.Fatal("Expected second login with same username to fail")
 		}
 
-		expectedError := "username 'duplicate_user' is already in use"
-		if err.Error() != expectedError {
-			t.Errorf("Expected error '%s', got '%s'", expectedError, err.Error())
+		if !errors.Is(err, ErrUsernameInUse) {
+			t.Errorf("Expected ErrUsernameInUse, got '%v'", err)
 		}
 	})
 
@@ -143,6 +143,34 @@ func TestAuthService_CleanupInactivePlayers(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "already in use") {
 			t.Errorf("Expected 'already in use' error, got: %v", err)
+		}
+	})
+
+	t.Run("should allow username reuse after disconnect cleanup", func(t *testing.T) {
+		// Player logs in
+		player, err := authService.Login("disconnect_user")
+		if err != nil {
+			t.Fatalf("Expected login to succeed, got error: %v", err)
+		}
+
+		// Simulate disconnect by deleting player
+		err = authService.DeletePlayer(player.ID)
+		if err != nil {
+			t.Fatalf("Expected delete to succeed, got error: %v", err)
+		}
+
+		// Same username should now be available
+		player2, err := authService.Login("disconnect_user")
+		if err != nil {
+			t.Fatalf("Expected login with same username after disconnect to succeed, got error: %v", err)
+		}
+
+		if player2.Username != "disconnect_user" {
+			t.Errorf("Expected username 'disconnect_user', got '%s'", player2.Username)
+		}
+
+		if player2.ID == player.ID {
+			t.Error("Expected new player to have different ID")
 		}
 	})
 }

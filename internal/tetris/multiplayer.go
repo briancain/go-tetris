@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -53,7 +54,7 @@ func (mc *MultiplayerClient) Login(username string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("login failed with status %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("%s", strings.TrimSpace(string(body)))
 	}
 
 	// Parse response

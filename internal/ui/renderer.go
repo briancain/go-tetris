@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"image/color"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text" // nolint:staticcheck // Using deprecated API for compatibility
@@ -873,7 +874,8 @@ func (r *Renderer) drawMultiplayerSetup(screen *ebiten.Image) {
 		statusColor := color.RGBA{255, 255, 255, 255} // White
 		if status == "Connection error occurred" ||
 			status == "Username must be at least 2 characters" ||
-			status == "Username too long (max 12 characters)" {
+			status == "Username too long (max 12 characters)" ||
+			strings.Contains(status, "already in use") {
 			statusColor = color.RGBA{255, 0, 0, 255} // Red for errors
 		}
 		text.Draw(screen, status, r.font, x, y, statusColor) // nolint:staticcheck // Using deprecated API for compatibility

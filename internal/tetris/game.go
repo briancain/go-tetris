@@ -147,13 +147,13 @@ func (g *Game) Start() {
 	g.LoserScore = 0
 	g.RematchRequested = false
 	g.updateDropInterval()
-	
+
 	// Generate fresh pieces and validate spawn position
 	g.NextPiece = g.PieceGen.NextPiece()
 	g.CurrentPiece = g.PieceGen.NextPiece()
 	g.NextPiece = g.PieceGen.NextPiece()
 	g.invalidateGhostCache()
-	
+
 	// Check for game over on initial spawn (important for rematch)
 	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
 		g.handleLocalGameOver()
@@ -996,7 +996,7 @@ func (g *Game) StartMultiplayerConnection() {
 	err = g.ConnectToServer(g.UsernameInput)
 	if err != nil {
 		log.Printf("Multiplayer: Failed to connect to server: %v", err)
-		g.ConnectionStatus = "Connection error occurred"
+		g.ConnectionStatus = err.Error()
 		return
 	}
 
