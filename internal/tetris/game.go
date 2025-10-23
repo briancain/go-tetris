@@ -77,6 +77,11 @@ type Game struct {
 	// Server leaderboard data
 	Leaderboard []LeaderboardEntry `json:"leaderboard,omitempty"`
 	ServerURL   string             `json:"serverURL,omitempty"`
+
+	// Performance optimization: reusable slices
+	boardBuffer     [][]Cell // Reusable board slice for multiplayer
+	ghostY          int      // Cached ghost piece Y position
+	ghostCacheValid bool     // Whether ghost cache is valid
 }
 
 // NewGame creates a new Tetris game
@@ -176,6 +181,11 @@ func (g *Game) Update() {
 	}
 }
 
+// invalidateGhostCache marks the ghost piece cache as invalid
+func (g *Game) invalidateGhostCache() {
+	g.ghostCacheValid = false
+}
+
 // moveDown moves the current piece down one row
 func (g *Game) moveDown() {
 	// Create a copy of the current piece and try to move it down
@@ -213,6 +223,7 @@ func (g *Game) MoveLeft() bool {
 
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		g.CurrentPiece.Move(-1, 0)
+		g.invalidateGhostCache() // Invalidate ghost cache when piece moves
 		g.sendMoveToServer("left")
 		return true
 	}
@@ -232,6 +243,7 @@ func (g *Game) MoveRight() bool {
 
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		g.CurrentPiece.Move(1, 0)
+		g.invalidateGhostCache() // Invalidate ghost cache when piece moves
 		g.sendMoveToServer("right")
 		return true
 	}
@@ -270,6 +282,7 @@ func (g *Game) RotatePiece() bool {
 	if g.Board.IsValidPosition(testPiece, testPiece.X, testPiece.Y) {
 		// Apply the rotation to the actual piece
 		g.CurrentPiece.Rotate()
+		g.invalidateGhostCache() // Invalidate ghost cache when piece rotates
 		g.sendMoveToServer("rotate")
 		return true
 	}
@@ -294,6 +307,7 @@ func (g *Game) RotatePiece() bool {
 			g.CurrentPiece.Rotate()
 			g.CurrentPiece.X += offset[0]
 			g.CurrentPiece.Y += offset[1]
+			g.invalidateGhostCache() // Invalidate ghost cache when piece rotates
 			g.sendMoveToServer("rotate")
 			return true
 		}
@@ -420,6 +434,7 @@ func (g *Game) sendGameOverToServer() {
 func (g *Game) spawnNextPiece() {
 	g.CurrentPiece = g.NextPiece
 	g.NextPiece = g.PieceGen.NextPiece()
+	g.invalidateGhostCache() // Invalidate ghost cache for new piece
 
 	// Check for game over - if the new piece can't be placed
 	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
@@ -602,21 +617,39 @@ func (g *Game) GetGhostPieceY() int {
 		return 0
 	}
 
+	// Return cached value if still valid
+	if g.ghostCacheValid {
+		return g.ghostY
+	}
+
+	// Calculate ghost position without creating piece copy
 	ghostY := g.CurrentPiece.Y
-	testPiece := g.CurrentPiece.Copy()
 
 	for {
 		testY := ghostY + 1
-		testPiece.Y = testY
 
-		if !g.Board.IsValidPosition(testPiece, testPiece.X, testY) {
+		// Check if position is valid without creating a copy
+		if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, testY) {
 			break
 		}
 
 		ghostY = testY
 	}
 
+	// Cache the result
+	g.ghostY = ghostY
+	g.ghostCacheValid = true
+
 	return ghostY
+}
+
+// clearOpponentBoard clears the opponent board without reallocating
+func (g *Game) clearOpponentBoard() {
+	for i := range g.OpponentBoard {
+		for j := range g.OpponentBoard[i] {
+			g.OpponentBoard[i][j] = Empty
+		}
+	}
 }
 
 // EnableMultiplayer enables multiplayer mode with server connection
@@ -628,10 +661,15 @@ func (g *Game) EnableMultiplayer(serverURL string) error {
 	g.MultiplayerClient = NewMultiplayerClient(serverURL)
 	g.MultiplayerMode = true
 
-	// Initialize opponent board
-	g.OpponentBoard = make([][]Cell, BoardHeightWithBuffer)
-	for i := range g.OpponentBoard {
-		g.OpponentBoard[i] = make([]Cell, BoardWidth)
+	// Initialize opponent board only if not already allocated
+	if g.OpponentBoard == nil {
+		g.OpponentBoard = make([][]Cell, BoardHeightWithBuffer)
+		for i := range g.OpponentBoard {
+			g.OpponentBoard[i] = make([]Cell, BoardWidth)
+		}
+	} else {
+		// Reuse existing board, just clear it
+		g.clearOpponentBoard()
 	}
 
 	return nil
@@ -836,7 +874,7 @@ func (g *Game) RequestRematch() {
 }
 
 // handleRematchRequest processes rematch request from opponent
-func (g *Game) handleRematchRequest(message map[string]interface{}) {
+func (g *Game) handleRematchRequest(_ map[string]interface{}) {
 	log.Printf("Game: Opponent requested rematch")
 	// Could show UI notification here
 }
@@ -885,7 +923,7 @@ func (g *Game) FetchLeaderboard() {
 }
 
 // handleOpponentDisconnected processes opponent disconnect message
-func (g *Game) handleOpponentDisconnected(message map[string]interface{}) {
+func (g *Game) handleOpponentDisconnected(_ map[string]interface{}) {
 	log.Printf("Game: Opponent disconnected - You win!")
 	g.State = StateGameOver
 }
@@ -893,13 +931,20 @@ func (g *Game) handleOpponentDisconnected(message map[string]interface{}) {
 // sendStateToServer sends current game state to server
 func (g *Game) sendStateToServer() {
 	if g.MultiplayerClient != nil && g.MultiplayerClient.IsConnected() {
-		// Convert board array to slice
-		board := make([][]Cell, len(g.Board.Cells))
-		for i, row := range g.Board.Cells {
-			board[i] = make([]Cell, len(row))
-			copy(board[i], row[:])
+		// Reuse board buffer to avoid allocations
+		if g.boardBuffer == nil {
+			g.boardBuffer = make([][]Cell, len(g.Board.Cells))
+			for i := range g.boardBuffer {
+				g.boardBuffer[i] = make([]Cell, len(g.Board.Cells[i]))
+			}
 		}
-		_ = g.MultiplayerClient.SendGameState(board, g.Score, g.Level, g.LinesCleared)
+
+		// Copy current board state to buffer
+		for i, row := range g.Board.Cells {
+			copy(g.boardBuffer[i], row[:])
+		}
+
+		_ = g.MultiplayerClient.SendGameState(g.boardBuffer, g.Score, g.Level, g.LinesCleared)
 	}
 }
 

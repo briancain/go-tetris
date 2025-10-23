@@ -47,7 +47,7 @@ func (g *App) Update() error {
 			go g.game.FetchLeaderboard() // Fetch server leaderboard
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-			// Quit (for now, just do nothing)
+			// Quit - handled by OS/window manager
 		}
 	case StateMultiplayerSetup:
 		// Handle text input for username
