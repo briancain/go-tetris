@@ -13,7 +13,9 @@ import (
 	"github.com/briancain/go-tetris/internal/server/logger"
 	"github.com/briancain/go-tetris/internal/server/middleware"
 	"github.com/briancain/go-tetris/internal/server/services"
+	"github.com/briancain/go-tetris/internal/server/storage"
 	"github.com/briancain/go-tetris/internal/server/storage/memory"
+	"github.com/briancain/go-tetris/internal/server/storage/redis"
 )
 
 func main() {
@@ -26,10 +28,41 @@ func main() {
 
 	logger.Logger.Info("Starting Tetris multiplayer server", "config", cfg)
 
-	// Initialize storage
-	playerStore := memory.NewPlayerStore()
-	gameStore := memory.NewGameStore()
-	queueStore := memory.NewQueueStore()
+	// Initialize storage based on configuration
+	var gameStore storage.GameStore
+	var queueStore storage.QueueStore
+	var storageHealth storage.HealthChecker
+
+	playerStore := memory.NewPlayerStore() // Always use memory for players in Phase 8
+
+	if cfg.RedisURL != "" {
+		// Use Redis for game and queue storage
+		logger.Logger.Info("Storage mode: Redis", "redis_url", cfg.RedisURL, "components", "games,queues")
+
+		redisClient, err := redis.NewClient(cfg.RedisURL)
+		if err != nil {
+			logger.Logger.Error("Failed to connect to Redis", "error", err)
+			os.Exit(1)
+		}
+
+		// Test Redis connection
+		if err := redisClient.HealthCheck(); err != nil {
+			logger.Logger.Error("Redis health check failed", "error", err)
+			os.Exit(1)
+		}
+
+		gameStore = redis.NewGameStore(redisClient)
+		queueStore = redis.NewQueueStore(redisClient)
+		storageHealth = redisClient
+
+		logger.Logger.Info("Redis storage initialized successfully")
+	} else {
+		// Use in-memory storage
+		logger.Logger.Info("Storage mode: In-Memory", "components", "games,queues,players")
+		gameStore = memory.NewGameStore()
+		queueStore = memory.NewQueueStore()
+		storageHealth = playerStore
+	}
 
 	// Initialize services
 	authService := services.NewAuthService(playerStore)
@@ -45,7 +78,7 @@ func main() {
 	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
 	leaderboardHandler := handlers.NewLeaderboardHandler(playerStore)
 	wsHandler := handlers.NewWebSocketHandler(wsManager, authService, gameManager)
-	healthHandler := handlers.NewHealthHandler(wsManager, playerStore)
+	healthHandler := handlers.NewHealthHandler(wsManager, storageHealth)
 
 	// Setup routes with logging middleware
 	http.HandleFunc("/api/auth/login", middleware.RequestLogging(authHandler.Login))

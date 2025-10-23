@@ -44,8 +44,8 @@ func TestLoadWithDefaults(t *testing.T) {
 	if cfg.Port != "8080" {
 		t.Errorf("Expected default port 8080, got %s", cfg.Port)
 	}
-	if cfg.RedisURL != "redis://localhost:6379" {
-		t.Errorf("Expected default Redis URL, got %s", cfg.RedisURL)
+	if cfg.RedisURL != "" {
+		t.Errorf("Expected empty Redis URL by default, got %s", cfg.RedisURL)
 	}
 	if cfg.ServerURL != "http://localhost:8080" {
 		t.Errorf("Expected default server URL, got %s", cfg.ServerURL)

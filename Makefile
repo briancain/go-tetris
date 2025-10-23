@@ -70,6 +70,10 @@ run-web: build-web
 run-server: build-server
 	./$(BIN_DIR)/server
 
+# Run the server application with Redis storage
+run-server-redis: build-server
+	./$(BIN_DIR)/server -redis-url redis://localhost:6379
+
 # Run all tests
 test:
 	go test ./... -count=1

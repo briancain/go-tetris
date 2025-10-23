@@ -33,7 +33,7 @@ func LoadWithFlags(parseFlags bool) (*Config, error) {
 
 	cfg := &Config{
 		Port:      getValue(port, "PORT", "8080"),
-		RedisURL:  getValue(redisURL, "REDIS_URL", "redis://localhost:6379"),
+		RedisURL:  getValue(redisURL, "REDIS_URL", ""),
 		ServerURL: getValue(serverURL, "SERVER_URL", "http://localhost:8080"),
 	}
 
@@ -47,9 +47,6 @@ func LoadWithFlags(parseFlags bool) (*Config, error) {
 func (c *Config) validate() error {
 	if c.Port == "" {
 		return fmt.Errorf("PORT is required")
-	}
-	if c.RedisURL == "" {
-		return fmt.Errorf("REDIS_URL is required")
 	}
 	if c.ServerURL == "" {
 		return fmt.Errorf("SERVER_URL is required")
