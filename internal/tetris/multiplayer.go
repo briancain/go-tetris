@@ -258,6 +258,11 @@ func (mc *MultiplayerClient) readMessages() {
 					mc.gameID = gameID
 					log.Printf("Multiplayer: Match found! Game ID: %s", gameID)
 				}
+			case "rematch_start":
+				if gameID, ok := message["gameId"].(string); ok {
+					mc.gameID = gameID
+					log.Printf("Multiplayer: Rematch started! Game ID: %s", gameID)
+				}
 			case "game_over":
 				mc.gameID = ""
 				log.Printf("Multiplayer: Game over")

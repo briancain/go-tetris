@@ -132,8 +132,6 @@ func NewGameWithSeed(seed int64) *Game {
 // Start begins a new game
 func (g *Game) Start() {
 	g.Board.Clear()
-	g.CurrentPiece = g.NextPiece
-	g.NextPiece = g.PieceGen.NextPiece()
 	g.HeldPiece = nil
 	g.HasSwapped = false
 	g.Score = 0
@@ -149,6 +147,17 @@ func (g *Game) Start() {
 	g.LoserScore = 0
 	g.RematchRequested = false
 	g.updateDropInterval()
+	
+	// Generate fresh pieces and validate spawn position
+	g.NextPiece = g.PieceGen.NextPiece()
+	g.CurrentPiece = g.PieceGen.NextPiece()
+	g.NextPiece = g.PieceGen.NextPiece()
+	g.invalidateGhostCache()
+	
+	// Check for game over on initial spawn (important for rematch)
+	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
+		g.handleLocalGameOver()
+	}
 }
 
 // canProcessInput returns true if the game can process input
@@ -438,7 +447,7 @@ func (g *Game) spawnNextPiece() {
 
 	// Check for game over - if the new piece can't be placed
 	if !g.Board.IsValidPosition(g.CurrentPiece, g.CurrentPiece.X, g.CurrentPiece.Y) {
-		g.State = StateGameOver
+		g.handleLocalGameOver()
 	}
 }
 
