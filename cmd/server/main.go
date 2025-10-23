@@ -2,7 +2,9 @@ package main
 
 import (
 	"net/http"
+	"os"
 
+	"github.com/briancain/go-tetris/internal/server/config"
 	"github.com/briancain/go-tetris/internal/server/handlers"
 	"github.com/briancain/go-tetris/internal/server/logger"
 	"github.com/briancain/go-tetris/internal/server/middleware"
@@ -11,7 +13,14 @@ import (
 )
 
 func main() {
-	logger.Logger.Info("Starting Tetris multiplayer server")
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Logger.Error("Failed to load configuration", "error", err)
+		os.Exit(1)
+	}
+
+	logger.Logger.Info("Starting Tetris multiplayer server", "config", cfg)
 
 	// Initialize storage
 	playerStore := memory.NewPlayerStore()
@@ -52,11 +61,11 @@ func main() {
 	})
 
 	// Start server
-	port := ":8080"
+	port := ":" + cfg.Port
 	logger.Logger.Info("Server starting",
 		"port", port,
-		"websocket_endpoint", "ws://localhost"+port+"/ws",
-		"health_endpoint", "http://localhost"+port+"/health",
+		"redis_url", cfg.RedisURL,
+		"server_url", cfg.ServerURL,
 	)
 
 	if err := http.ListenAndServe(port, nil); err != nil {

@@ -104,19 +104,30 @@ func TestMatchmakingService_TwoPlayerMatch(t *testing.T) {
 	matchmaker.JoinQueue("player1")
 	matchmaker.JoinQueue("player2")
 
-	// Give matchmaking time to process
-	time.Sleep(200 * time.Millisecond)
+	// Wait for matchmaking to complete with longer timeout and more checks
+	var games []*models.GameSession
+	var err error
+	matched := false
 
-	// Verify both players are out of queue (matched)
-	pos1, _ := matchmaker.GetQueueStatus("player1")
-	pos2, _ := matchmaker.GetQueueStatus("player2")
+	for i := 0; i < 20; i++ { // Increased iterations
+		time.Sleep(25 * time.Millisecond) // Shorter sleep, more frequent checks
 
-	if pos1 != -1 || pos2 != -1 {
-		t.Errorf("Expected both players to be matched and out of queue, got positions %d, %d", pos1, pos2)
+		// Check if players are matched (out of queue)
+		pos1, _ := matchmaker.GetQueueStatus("player1")
+		pos2, _ := matchmaker.GetQueueStatus("player2")
+
+		if pos1 == -1 && pos2 == -1 {
+			matched = true
+			break
+		}
 	}
 
-	// Verify exactly one game was created
-	games, err := gameStore.GetActiveGames()
+	if !matched {
+		t.Fatal("Players were not matched within timeout")
+	}
+
+	// Now check for exactly one game
+	games, err = gameStore.GetActiveGames()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

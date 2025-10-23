@@ -59,6 +59,35 @@ go build -o bin/tetris ./cmd
 go run ./cmd
 ```
 
+### Server Configuration
+
+The multiplayer server supports configuration via CLI flags, environment variables, or defaults:
+
+```bash
+# Build and run the server
+go build -o bin/server ./cmd/server
+./bin/server
+
+# With CLI flags (highest priority)
+./bin/server -port 9000 -redis-url redis://prod:6379 -server-url https://api.example.com
+
+# With environment variables (fallback)
+PORT=9000 REDIS_URL=redis://prod:6379 ./bin/server
+
+# Mixed (CLI flags override env vars)
+PORT=7000 ./bin/server -port 9000  # Uses port 9000
+
+# Show help
+./bin/server -h
+```
+
+Configuration priority: **CLI flags** → **Environment variables** → **Defaults**
+
+Configuration options:
+- `PORT` / `-port`: Server port (default: 8080)
+- `REDIS_URL` / `-redis-url`: Redis connection URL (default: redis://localhost:6379)
+- `SERVER_URL` / `-server-url`: Public server URL (default: http://localhost:8080)
+
 ## Tetris Logo
 
 To fully comply with the Tetris Guidelines, you need to obtain the official Tetris logo from The Tetris Company and place it in the `internal/ui/assets` directory as `tetris_logo.png`.
