@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/briancain/go-tetris/internal/server/logger"
@@ -263,8 +262,14 @@ func (gm *GameManager) finalizeGame(game *models.GameSession, winnerID string) {
 	// Update player statistics
 	gm.updatePlayerStats(game, winnerID)
 
-	log.Printf("Game %s finalized, winner: %s (P1: %d, P2: %d)",
-		game.ID, winnerID, game.Player1Score, game.Player2Score)
+	logger.Logger.Info("Game finalized",
+		"gameID", game.ID,
+		"winnerID", winnerID,
+		"player1Score", game.Player1Score,
+		"player2Score", game.Player2Score,
+		"player1Username", game.Player1.Username,
+		"player2Username", game.Player2.Username,
+	)
 }
 
 // HandleRematchRequest processes a rematch request from a player
@@ -319,7 +324,12 @@ func (gm *GameManager) HandleRematchRequest(playerID string) error {
 		gm.startRematch(lastGame)
 	}
 
-	log.Printf("Rematch requested by %s in game %s", playerID, lastGame.ID)
+	logger.Logger.Info("Rematch requested",
+		"playerID", playerID,
+		"gameID", lastGame.ID,
+		"player1Username", lastGame.Player1.Username,
+		"player2Username", lastGame.Player2.Username,
+	)
 	return nil
 }
 
@@ -344,7 +354,12 @@ func (gm *GameManager) startRematch(oldGame *models.GameSession) {
 	// Store new game
 	err := gm.gameStore.CreateGame(newGame)
 	if err != nil {
-		log.Printf("Failed to create rematch game: %v", err)
+		logger.Logger.Error("Failed to create rematch game",
+			"error", err,
+			"gameID", newGame.ID,
+			"player1Username", newGame.Player1.Username,
+			"player2Username", newGame.Player2.Username,
+		)
 		return
 	}
 
@@ -358,7 +373,12 @@ func (gm *GameManager) startRematch(oldGame *models.GameSession) {
 	gm.sendToPlayer(newGame.Player1.ID, rematchStartMsg)
 	gm.sendToPlayer(newGame.Player2.ID, rematchStartMsg)
 
-	log.Printf("Rematch started: %s (seed: %d)", newGame.ID, newGame.Seed)
+	logger.Logger.Info("Rematch started",
+		"gameID", newGame.ID,
+		"seed", newGame.Seed,
+		"player1Username", newGame.Player1.Username,
+		"player2Username", newGame.Player2.Username,
+	)
 }
 
 // HandlePlayerDisconnect handles when a player disconnects mid-game
@@ -389,8 +409,14 @@ func (gm *GameManager) HandlePlayerDisconnect(playerID string) error {
 			}
 			gm.sendToPlayer(opponentID, disconnectMsg)
 
-			log.Printf("Player %s disconnected from game %s, opponent %s wins by forfeit",
-				playerID, game.ID, opponentID)
+			logger.Logger.Info("Player disconnected from game",
+				"playerID", playerID,
+				"gameID", game.ID,
+				"opponentID", opponentID,
+				"result", "forfeit_win",
+				"player1Username", game.Player1.Username,
+				"player2Username", game.Player2.Username,
+			)
 			break
 		}
 	}
@@ -424,14 +450,33 @@ func (gm *GameManager) updatePlayerStats(game *models.GameSession, winnerID stri
 	}
 	_ = gm.playerStore.UpdatePlayer(game.Player2)
 
-	log.Printf("Updated stats for players %s and %s", game.Player1.Username, game.Player2.Username)
+	logger.Logger.Info("Player stats updated",
+		"player1Username", game.Player1.Username,
+		"player2Username", game.Player2.Username,
+		"player1Stats", map[string]interface{}{
+			"totalGames": game.Player1.TotalGames,
+			"wins":       game.Player1.Wins,
+			"losses":     game.Player1.Losses,
+			"highScore":  game.Player1.HighScore,
+		},
+		"player2Stats", map[string]interface{}{
+			"totalGames": game.Player2.TotalGames,
+			"wins":       game.Player2.Wins,
+			"losses":     game.Player2.Losses,
+			"highScore":  game.Player2.HighScore,
+		},
+	)
 }
 
 // sendToPlayer sends a message to a specific player via WebSocket
 func (gm *GameManager) sendToPlayer(playerID string, message map[string]interface{}) {
 	data, err := json.Marshal(message)
 	if err != nil {
-		log.Printf("Failed to marshal message: %v", err)
+		logger.Logger.Error("Failed to marshal message",
+			"error", err,
+			"playerID", playerID,
+			"messageType", fmt.Sprintf("%T", message),
+		)
 		return
 	}
 
