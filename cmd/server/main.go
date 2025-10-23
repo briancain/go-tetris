@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/briancain/go-tetris/internal/server/config"
 	"github.com/briancain/go-tetris/internal/server/handlers"
@@ -60,15 +64,48 @@ func main() {
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	// Start server
+	// Create HTTP server
 	port := ":" + cfg.Port
-	logger.Logger.Info("Server starting",
-		"port", port,
-		"redis_url", cfg.RedisURL,
-		"server_url", cfg.ServerURL,
-	)
-
-	if err := http.ListenAndServe(port, nil); err != nil {
-		logger.Logger.Error("Server failed to start", "error", err)
+	server := &http.Server{
+		Addr: port,
 	}
+
+	// Start server in goroutine
+	go func() {
+		logger.Logger.Info("Server starting",
+			"port", port,
+			"redis_url", cfg.RedisURL,
+			"server_url", cfg.ServerURL,
+		)
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Logger.Error("Server failed to start", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Setup graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for shutdown signal
+	<-quit
+	logger.Logger.Info("Shutdown signal received, starting graceful shutdown...")
+
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Shutdown WebSocket connections
+	logger.Logger.Info("Closing WebSocket connections...")
+	wsManager.Shutdown()
+
+	// Shutdown HTTP server
+	logger.Logger.Info("Shutting down HTTP server...")
+	if err := server.Shutdown(ctx); err != nil {
+		logger.Logger.Error("Server forced to shutdown", "error", err)
+		os.Exit(1)
+	}
+
+	logger.Logger.Info("Server gracefully stopped")
 }

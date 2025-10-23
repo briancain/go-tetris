@@ -97,3 +97,29 @@ func (wsm *WebSocketManager) GetConnectionCount() int {
 	defer wsm.mu.RUnlock()
 	return len(wsm.connections)
 }
+
+// Shutdown gracefully closes all WebSocket connections
+func (wsm *WebSocketManager) Shutdown() {
+	wsm.mu.Lock()
+	defer wsm.mu.Unlock()
+
+	logger.Logger.Info("Shutting down WebSocket connections", "count", len(wsm.connections))
+
+	for playerID, conn := range wsm.connections {
+		// Send close message to client
+		err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "Server shutting down"))
+		if err != nil {
+			logger.Logger.Warn("Failed to send close message", "playerID", playerID, "error", err)
+		}
+
+		// Close the connection
+		err = conn.Close()
+		if err != nil {
+			logger.Logger.Warn("Failed to close WebSocket connection", "playerID", playerID, "error", err)
+		}
+	}
+
+	// Clear all connections
+	wsm.connections = make(map[string]*websocket.Conn)
+	logger.Logger.Info("All WebSocket connections closed")
+}
