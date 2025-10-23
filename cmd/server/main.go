@@ -45,6 +45,7 @@ func main() {
 	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
 	leaderboardHandler := handlers.NewLeaderboardHandler(playerStore)
 	wsHandler := handlers.NewWebSocketHandler(wsManager, authService, gameManager)
+	healthHandler := handlers.NewHealthHandler(wsManager)
 
 	// Setup routes with logging middleware
 	http.HandleFunc("/api/auth/login", middleware.RequestLogging(authHandler.Login))
@@ -58,11 +59,9 @@ func main() {
 
 	http.HandleFunc("/ws", wsHandler.HandleWebSocket)
 
-	// Health check endpoint
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
-	})
+	// Health check and metrics endpoints
+	http.HandleFunc("/health", healthHandler.Health)
+	http.HandleFunc("/metrics", healthHandler.Metrics)
 
 	// Create HTTP server
 	port := ":" + cfg.Port
