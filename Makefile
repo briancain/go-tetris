@@ -183,14 +183,18 @@ build-all: build-desktop build-web build-server
 # Infrastructure management
 .PHONY: infra-up infra-down infra-logs infra-clean
 
+# Start local infrastructure (Redis)
 infra-up:
 	finch compose up -d
 
+# Stop local infrastructure
 infra-down:
 	finch compose down
 
+# View infrastructure logs
 infra-logs:
 	finch compose logs -f
 
+# Clean infrastructure (remove volumes)
 infra-clean:
 	finch compose down -v
