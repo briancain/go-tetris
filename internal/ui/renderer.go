@@ -111,6 +111,8 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 
 // drawMainMenu draws the main menu with game mode options
 func (r *Renderer) drawMainMenu(screen *ebiten.Image) {
+	var menuStartY int
+
 	// Draw the Tetris logo if available
 	if r.logoImg != nil {
 		logoWidth := r.logoImg.Bounds().Dx()
@@ -124,58 +126,62 @@ func (r *Renderer) drawMainMenu(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
 		screen.DrawImage(r.logoImg, op)
+
+		menuStartY = ScreenHeight/2 - 10
 	} else {
-		// Fallback to text if logo is not available
+		// Fallback to text if logo is not available - position higher for better centering
 		msg := "TETRIS"
 		x := (ScreenWidth - len(msg)*7) / 2
-		y := ScreenHeight / 4
+		y := 80
 		text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
+
+		menuStartY = 140
 	}
 
 	msg := "Official Guidelines Edition"
 	x := (ScreenWidth - len(msg)*7) / 2
-	y := ScreenHeight / 3
+	y := menuStartY - 40
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Menu options
 	msg = "1. Single Player"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2 - 10
+	y = menuStartY
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "2. Multiplayer"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2 + 10
+	y = menuStartY + 20
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "3. High Scores"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2 + 30
+	y = menuStartY + 40
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "ESC. Quit"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y = ScreenHeight/2 + 50
+	y = menuStartY + 60
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Controls:"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y += 60
+	y = menuStartY + 120
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Arrow Keys: Move"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y += 20
+	y = menuStartY + 140
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Up: Rotate"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y += 20
+	y = menuStartY + 160
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "Space: Hard Drop"
 	x = (ScreenWidth - len(msg)*7) / 2
-	y += 20
+	y = menuStartY + 180
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	msg = "ESC: Pause"
