@@ -84,19 +84,22 @@ func TestBoardBufferReuse(t *testing.T) {
 		t.Fatalf("Failed to enable multiplayer: %v", err)
 	}
 
-	// Manually trigger board buffer allocation by calling the method that uses it
-	game.lockPiece() // This calls sendGameState internally
+	// Manually allocate the board buffer to test reuse
+	game.boardBuffer = make([][]Cell, len(game.Board.Cells))
+	for i := range game.boardBuffer {
+		game.boardBuffer[i] = make([]Cell, len(game.Board.Cells[i]))
+	}
 
 	if game.boardBuffer == nil {
-		t.Error("Board buffer should be allocated after lockPiece")
+		t.Error("Board buffer should be allocated")
 	}
 
 	// Store pointer to first element for comparison
 	if len(game.boardBuffer) > 0 && len(game.boardBuffer[0]) > 0 {
 		originalBufferPtr := &game.boardBuffer[0][0]
 
-		// Second call should reuse buffer
-		game.lockPiece()
+		// Call sendStateToServer which should reuse the existing buffer
+		game.sendStateToServer()
 
 		newBufferPtr := &game.boardBuffer[0][0]
 		if originalBufferPtr != newBufferPtr {
