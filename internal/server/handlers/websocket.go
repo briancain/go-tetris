@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
 
+	"github.com/briancain/go-tetris/internal/server/logger"
 	"github.com/briancain/go-tetris/internal/server/services"
 	"github.com/briancain/go-tetris/pkg/models"
 )
@@ -43,6 +43,9 @@ func (h *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Reques
 	// Get session token from query parameter
 	token := r.URL.Query().Get("token")
 	if token == "" {
+		logger.Logger.Warn("WebSocket connection attempt without token",
+			"remoteAddr", r.RemoteAddr,
+		)
 		http.Error(w, "Missing token", http.StatusUnauthorized)
 		return
 	}
@@ -50,6 +53,10 @@ func (h *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Reques
 	// Validate token
 	player, err := h.authService.ValidateToken(token)
 	if err != nil {
+		logger.Logger.Warn("WebSocket connection attempt with invalid token",
+			"remoteAddr", r.RemoteAddr,
+			"error", err,
+		)
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
@@ -57,9 +64,19 @@ func (h *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Reques
 	// Upgrade connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("Failed to upgrade WebSocket: %v", err)
+		logger.Logger.Error("Failed to upgrade WebSocket connection",
+			"playerID", player.ID,
+			"username", player.Username,
+			"error", err,
+		)
 		return
 	}
+
+	logger.Logger.Info("WebSocket connection established",
+		"playerID", player.ID,
+		"username", player.Username,
+		"remoteAddr", r.RemoteAddr,
+	)
 
 	// Add connection to manager
 	h.wsManager.AddConnection(player.ID, conn)
@@ -79,7 +96,10 @@ func (h *WebSocketHandler) handleMessages(playerID string, conn *websocket.Conn)
 	for {
 		_, messageData, err := conn.ReadMessage()
 		if err != nil {
-			log.Printf("WebSocket read error for player %s: %v", playerID, err)
+			logger.Logger.Info("WebSocket connection closed",
+				"playerID", playerID,
+				"error", err,
+			)
 			break
 		}
 
@@ -87,16 +107,28 @@ func (h *WebSocketHandler) handleMessages(playerID string, conn *websocket.Conn)
 		var message map[string]interface{}
 		err = json.Unmarshal(messageData, &message)
 		if err != nil {
-			log.Printf("Failed to parse WebSocket message: %v", err)
+			logger.Logger.Error("Failed to parse WebSocket message",
+				"playerID", playerID,
+				"error", err,
+				"rawMessage", string(messageData),
+			)
 			continue
 		}
 
 		// Handle different message types
 		messageType, ok := message["type"].(string)
 		if !ok {
-			log.Printf("Missing message type")
+			logger.Logger.Warn("WebSocket message missing type field",
+				"playerID", playerID,
+				"message", message,
+			)
 			continue
 		}
+
+		logger.Logger.Debug("WebSocket message received",
+			"playerID", playerID,
+			"messageType", messageType,
+		)
 
 		switch messageType {
 		case "game_move":
@@ -110,7 +142,10 @@ func (h *WebSocketHandler) handleMessages(playerID string, conn *websocket.Conn)
 		case "ping":
 			h.handlePing(playerID)
 		default:
-			log.Printf("Unknown message type: %s", messageType)
+			logger.Logger.Warn("Unknown WebSocket message type",
+				"playerID", playerID,
+				"messageType", messageType,
+			)
 		}
 	}
 }
@@ -119,6 +154,9 @@ func (h *WebSocketHandler) handleMessages(playerID string, conn *websocket.Conn)
 func (h *WebSocketHandler) handleGameMove(playerID string, message map[string]interface{}) {
 	moveType, ok := message["moveType"].(string)
 	if !ok {
+		logger.Logger.Warn("Game move message missing moveType",
+			"playerID", playerID,
+		)
 		return
 	}
 
@@ -130,7 +168,11 @@ func (h *WebSocketHandler) handleGameMove(playerID string, message map[string]in
 
 	err := h.gameManager.HandleGameMove(playerID, move)
 	if err != nil {
-		log.Printf("Failed to handle game move: %v", err)
+		logger.Logger.Error("Failed to handle game move",
+			"playerID", playerID,
+			"moveType", moveType,
+			"error", err,
+		)
 	}
 }
 
@@ -168,9 +210,20 @@ func (h *WebSocketHandler) handleGameState(playerID string, message map[string]i
 		Timestamp: time.Now(),
 	}
 
+	logger.Logger.Debug("Game state update received",
+		"playerID", playerID,
+		"score", state.Score,
+		"level", state.Level,
+		"lines", state.Lines,
+	)
+
 	err := h.gameManager.HandleGameState(playerID, state)
 	if err != nil {
-		log.Printf("Failed to handle game state: %v", err)
+		logger.Logger.Error("Failed to handle game state",
+			"playerID", playerID,
+			"score", state.Score,
+			"error", err,
+		)
 	}
 }
 
@@ -178,20 +231,39 @@ func (h *WebSocketHandler) handleGameState(playerID string, message map[string]i
 func (h *WebSocketHandler) handleGameOver(playerID string, message map[string]interface{}) {
 	gameID, ok := message["gameId"].(string)
 	if !ok {
+		logger.Logger.Warn("Game over message missing gameId",
+			"playerID", playerID,
+		)
 		return
 	}
 
+	logger.Logger.Info("Game over received",
+		"playerID", playerID,
+		"gameID", gameID,
+	)
+
 	err := h.gameManager.EndGame(gameID, playerID)
 	if err != nil {
-		log.Printf("Failed to handle game over: %v", err)
+		logger.Logger.Error("Failed to handle game over",
+			"playerID", playerID,
+			"gameID", gameID,
+			"error", err,
+		)
 	}
 }
 
 // handleRematchRequest processes a rematch request
 func (h *WebSocketHandler) handleRematchRequest(playerID string, message map[string]interface{}) {
+	logger.Logger.Info("Rematch request received",
+		"playerID", playerID,
+	)
+
 	err := h.gameManager.HandleRematchRequest(playerID)
 	if err != nil {
-		log.Printf("Failed to handle rematch request: %v", err)
+		logger.Logger.Error("Failed to handle rematch request",
+			"playerID", playerID,
+			"error", err,
+		)
 	}
 }
 
@@ -203,15 +275,24 @@ func (h *WebSocketHandler) handlePing(playerID string) {
 
 	data, _ := json.Marshal(pongMsg)
 	h.wsManager.SendToPlayer(playerID, data)
+
+	logger.Logger.Debug("Ping/pong exchanged",
+		"playerID", playerID,
+	)
 }
 
 // handlePlayerDisconnect handles when a player disconnects
 func (h *WebSocketHandler) handlePlayerDisconnect(playerID string) {
-	log.Printf("Player %s disconnected", playerID)
+	logger.Logger.Info("Player disconnected from WebSocket",
+		"playerID", playerID,
+	)
 
 	// Notify game manager of disconnect
 	err := h.gameManager.HandlePlayerDisconnect(playerID)
 	if err != nil {
-		log.Printf("Failed to handle player disconnect: %v", err)
+		logger.Logger.Error("Failed to handle player disconnect",
+			"playerID", playerID,
+			"error", err,
+		)
 	}
 }

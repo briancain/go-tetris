@@ -1,10 +1,11 @@
 package services
 
 import (
-	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/briancain/go-tetris/internal/server/logger"
 )
 
 // WebSocketManager handles WebSocket connections
@@ -31,7 +32,9 @@ func (wsm *WebSocketManager) AddConnection(playerID string, conn *websocket.Conn
 	}
 
 	wsm.connections[playerID] = conn
-	log.Printf("Added WebSocket connection for player %s", playerID)
+	logger.Logger.Info("WebSocket connection added",
+		"playerID", playerID,
+	)
 }
 
 // RemoveConnection removes a WebSocket connection
@@ -42,7 +45,9 @@ func (wsm *WebSocketManager) RemoveConnection(playerID string) {
 	if conn, exists := wsm.connections[playerID]; exists {
 		conn.Close()
 		delete(wsm.connections, playerID)
-		log.Printf("Removed WebSocket connection for player %s", playerID)
+		logger.Logger.Info("WebSocket connection removed",
+			"playerID", playerID,
+		)
 	}
 }
 
@@ -53,13 +58,18 @@ func (wsm *WebSocketManager) SendToPlayer(playerID string, message []byte) {
 	wsm.mu.RUnlock()
 
 	if !exists {
-		log.Printf("No WebSocket connection for player %s", playerID)
+		logger.Logger.Warn("No WebSocket connection found for player",
+			"playerID", playerID,
+		)
 		return
 	}
 
 	err := conn.WriteMessage(websocket.TextMessage, message)
 	if err != nil {
-		log.Printf("Failed to send message to player %s: %v", playerID, err)
+		logger.Logger.Error("Failed to send WebSocket message",
+			"playerID", playerID,
+			"error", err,
+		)
 		wsm.RemoveConnection(playerID)
 	}
 }
@@ -72,7 +82,10 @@ func (wsm *WebSocketManager) BroadcastToAll(message []byte) {
 	for playerID, conn := range wsm.connections {
 		err := conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
-			log.Printf("Failed to broadcast to player %s: %v", playerID, err)
+			logger.Logger.Error("Failed to broadcast WebSocket message",
+				"playerID", playerID,
+				"error", err,
+			)
 			go wsm.RemoveConnection(playerID)
 		}
 	}

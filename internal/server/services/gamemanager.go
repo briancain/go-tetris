@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/briancain/go-tetris/internal/server/logger"
 	"github.com/briancain/go-tetris/internal/server/storage"
 	"github.com/briancain/go-tetris/pkg/models"
 )
@@ -38,7 +39,12 @@ func (gm *GameManager) StartGame(game *models.GameSession) {
 	game.Status = models.GameStatusActive
 	err := gm.gameStore.UpdateGame(game)
 	if err != nil {
-		log.Printf("Failed to update game status: %v", err)
+		logger.Logger.Error("Failed to update game status",
+			"gameID", game.ID,
+			"player1ID", game.Player1.ID,
+			"player2ID", game.Player2.ID,
+			"error", err,
+		)
 		return
 	}
 
@@ -57,8 +63,12 @@ func (gm *GameManager) StartGame(game *models.GameSession) {
 	matchMsg["opponentId"] = game.Player1.ID
 	gm.sendToPlayer(game.Player2.ID, matchMsg)
 
-	log.Printf("Started game %s between %s and %s with seed %d",
-		game.ID, game.Player1.Username, game.Player2.Username, game.Seed)
+	logger.Logger.Info("Game started",
+		"gameID", game.ID,
+		"player1Username", game.Player1.Username,
+		"player2Username", game.Player2.Username,
+		"seed", game.Seed,
+	)
 }
 
 // HandleGameMove processes a player's move
@@ -194,7 +204,11 @@ func (gm *GameManager) EndGame(gameID, loserID string) error {
 		gm.finalizeGame(game, "")
 	}
 
-	log.Printf("Player %s lost in game %s (score: %d)", loserID, gameID, loserScore)
+	logger.Logger.Info("Player lost in game",
+		"playerID", loserID,
+		"gameID", gameID,
+		"score", loserScore,
+	)
 	return nil
 }
 
@@ -220,7 +234,10 @@ func (gm *GameManager) finalizeGame(game *models.GameSession, winnerID string) {
 	game.Status = models.GameStatusFinished
 	err := gm.gameStore.UpdateGame(game)
 	if err != nil {
-		log.Printf("Failed to update game status: %v", err)
+		logger.Logger.Error("Failed to update game status",
+			"gameID", game.ID,
+			"error", err,
+		)
 		return
 	}
 

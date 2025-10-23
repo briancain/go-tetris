@@ -1,17 +1,17 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/briancain/go-tetris/internal/server/handlers"
+	"github.com/briancain/go-tetris/internal/server/logger"
 	"github.com/briancain/go-tetris/internal/server/middleware"
 	"github.com/briancain/go-tetris/internal/server/services"
 	"github.com/briancain/go-tetris/internal/server/storage/memory"
 )
 
 func main() {
-	log.Println("Starting Tetris multiplayer server...")
+	logger.Logger.Info("Starting Tetris multiplayer server")
 
 	// Initialize storage
 	playerStore := memory.NewPlayerStore()
@@ -33,15 +33,15 @@ func main() {
 	leaderboardHandler := handlers.NewLeaderboardHandler(playerStore)
 	wsHandler := handlers.NewWebSocketHandler(wsManager, authService, gameManager)
 
-	// Setup routes
-	http.HandleFunc("/api/auth/login", authHandler.Login)
-	http.HandleFunc("/api/auth/logout", authMiddleware.RequireAuth(authHandler.Logout))
+	// Setup routes with logging middleware
+	http.HandleFunc("/api/auth/login", middleware.RequestLogging(authHandler.Login))
+	http.HandleFunc("/api/auth/logout", middleware.RequestLogging(authMiddleware.RequireAuth(authHandler.Logout)))
 
-	http.HandleFunc("/api/matchmaking/queue", authMiddleware.RequireAuth(matchmakingHandler.JoinQueue))
-	http.HandleFunc("/api/matchmaking/queue/leave", authMiddleware.RequireAuth(matchmakingHandler.LeaveQueue))
-	http.HandleFunc("/api/matchmaking/status", authMiddleware.RequireAuth(matchmakingHandler.GetQueueStatus))
+	http.HandleFunc("/api/matchmaking/queue", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.JoinQueue)))
+	http.HandleFunc("/api/matchmaking/queue/leave", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.LeaveQueue)))
+	http.HandleFunc("/api/matchmaking/status", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.GetQueueStatus)))
 
-	http.HandleFunc("/api/leaderboard", leaderboardHandler.GetLeaderboard)
+	http.HandleFunc("/api/leaderboard", middleware.RequestLogging(leaderboardHandler.GetLeaderboard))
 
 	http.HandleFunc("/ws", wsHandler.HandleWebSocket)
 
@@ -53,11 +53,13 @@ func main() {
 
 	// Start server
 	port := ":8080"
-	log.Printf("Server starting on port %s", port)
-	log.Printf("WebSocket endpoint: ws://localhost%s/ws", port)
-	log.Printf("Health check: http://localhost%s/health", port)
+	logger.Logger.Info("Server starting",
+		"port", port,
+		"websocket_endpoint", "ws://localhost"+port+"/ws",
+		"health_endpoint", "http://localhost"+port+"/health",
+	)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
-		log.Fatal("Server failed to start:", err)
+		logger.Logger.Error("Server failed to start", "error", err)
 	}
 }
