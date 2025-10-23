@@ -35,13 +35,13 @@ func startTestServer() *http.Server {
 	matchmakingHandler := handlers.NewMatchmakingHandler(matchmakingService)
 	wsHandler := handlers.NewWebSocketHandler(wsManager, authService, gameManager)
 
-	// Setup routes
+	// Setup routes with logging middleware
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/auth/login", authHandler.Login)
-	mux.HandleFunc("/api/auth/logout", authMiddleware.RequireAuth(authHandler.Logout))
-	mux.HandleFunc("/api/matchmaking/queue", authMiddleware.RequireAuth(matchmakingHandler.JoinQueue))
-	mux.HandleFunc("/api/matchmaking/queue/leave", authMiddleware.RequireAuth(matchmakingHandler.LeaveQueue))
-	mux.HandleFunc("/api/matchmaking/status", authMiddleware.RequireAuth(matchmakingHandler.GetQueueStatus))
+	mux.HandleFunc("/api/auth/login", middleware.RequestLogging(authHandler.Login))
+	mux.HandleFunc("/api/auth/logout", middleware.RequestLogging(authMiddleware.RequireAuth(authHandler.Logout)))
+	mux.HandleFunc("/api/matchmaking/queue", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.JoinQueue)))
+	mux.HandleFunc("/api/matchmaking/queue/leave", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.LeaveQueue)))
+	mux.HandleFunc("/api/matchmaking/status", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.GetQueueStatus)))
 	mux.HandleFunc("/ws", wsHandler.HandleWebSocket)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
