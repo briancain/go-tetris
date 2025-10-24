@@ -1,0 +1,43 @@
+# Binaries
+bin/
+*.exe
+*.test
+*.out
+
+# Test files
+coverage/
+*.test
+
+# Git
+.git/
+.github/
+
+# Documentation
+*.md
+GUIDELINES.md
+ARCHITECTURE-PLAN.md
+
+# IDE
+.vscode/
+.idea/
+
+# Terraform
+terraform/
+
+# Web assets (not needed for server)
+web/
+
+# Test data
+test/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Docker
+docker-compose.yml
+Dockerfile
+
+# Misc
+.DS_Store
