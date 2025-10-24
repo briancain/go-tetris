@@ -23,12 +23,17 @@ if [ -z "$BUCKET_NAME" ]; then
 else
     echo "📦 Found bucket: $BUCKET_NAME"
     
-    # Delete all objects and versions in the bucket
+    # Delete all objects in the bucket
     echo "🗑️  Deleting all objects in bucket..."
     aws s3 rm "s3://$BUCKET_NAME" --recursive --profile "$PROFILE" || true
     
     # Delete all object versions
+    echo "🗑️  Deleting all object versions..."
     aws s3api delete-objects --bucket "$BUCKET_NAME" --delete "$(aws s3api list-object-versions --bucket "$BUCKET_NAME" --profile "$PROFILE" --output json --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}')" --profile "$PROFILE" 2>/dev/null || true
+    
+    # Delete all delete markers
+    echo "🗑️  Deleting all delete markers..."
+    aws s3api delete-objects --bucket "$BUCKET_NAME" --delete "$(aws s3api list-object-versions --bucket "$BUCKET_NAME" --profile "$PROFILE" --output json --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}')" --profile "$PROFILE" 2>/dev/null || true
     
     # Delete the bucket
     echo "🗑️  Deleting S3 bucket..."
