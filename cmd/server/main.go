@@ -33,7 +33,7 @@ func main() {
 	var queueStore storage.QueueStore
 	var storageHealth storage.HealthChecker
 
-	playerStore := memory.NewPlayerStore() // Always use memory for players in Phase 8
+	playerStore := memory.NewPlayerStore()
 
 	if cfg.RedisURL != "" {
 		// Use Redis for game and queue storage
