@@ -145,12 +145,12 @@ func (r *Renderer) drawMainMenu(screen *ebiten.Image) {
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
 	// Menu options
-	msg = "1. Single Player"
+	msg = "1. Solo"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y = menuStartY
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
 
-	msg = "2. Multiplayer"
+	msg = "2. Ranked (beta)"
 	x = (ScreenWidth - len(msg)*7) / 2
 	y = menuStartY + 20
 	text.Draw(screen, msg, r.font, x, y, color.White) // nolint:staticcheck // Using deprecated API for compatibility
