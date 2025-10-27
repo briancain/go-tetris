@@ -125,6 +125,7 @@ mod-tidy-check:
 fmt:
 	gofmt -w .
 	goimports -w .
+	terraform fmt terraform/
 
 # Check formatting
 fmt-check:
