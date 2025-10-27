@@ -43,3 +43,19 @@ output "redis_security_group_id" {
   description = "ID of the Redis security group"
   value       = aws_security_group.redis.id
 }
+
+# ECR Repository
+output "ecr_repository_url" {
+  description = "ECR repository URL for tetris-server"
+  value       = aws_ecr_repository.tetris_server.repository_url
+}
+
+output "ecs_task_execution_role_arn" {
+  description = "ECS task execution role ARN"
+  value       = aws_iam_role.ecs_task_execution.arn
+}
+
+output "ecs_task_role_arn" {
+  description = "ECS task role ARN"
+  value       = aws_iam_role.ecs_task.arn
+}
