@@ -34,3 +34,6 @@ terraform/.terraform.lock.hcl
 terraform/terraform.tfstate*
 terraform/terraform.tfvars
 terraform/backend.tf
+
+# Scratch document
+ARCHITECTURE-PLAN.md
