@@ -29,9 +29,9 @@ echo "🔐 Authenticating with ECR..."
 aws ecr get-login-password --region "$REGION" | finch login --username AWS --password-stdin "$ECR_URL"
 
 # Build image
-echo "🔨 Building Docker image..."
+echo "🔨 Building Docker image for amd64 architecture..."
 cd ..
-finch build -t "go-tetris-server:$TAG" .
+finch build --platform linux/amd64 -t "go-tetris-server:$TAG" .
 
 # Tag for ECR
 echo "🏷️  Tagging image for ECR..."
