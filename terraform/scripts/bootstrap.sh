@@ -73,7 +73,7 @@ aws dynamodb wait table-exists \
 
 # Create terraform backend configuration file
 echo "📝 Creating Terraform backend configuration..."
-cat > backend.tf << EOF
+cat > ../backend.tf << EOF
 terraform {
   backend "s3" {
     bucket         = "$BUCKET_NAME"
