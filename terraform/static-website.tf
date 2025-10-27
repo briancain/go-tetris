@@ -40,6 +40,17 @@ resource "aws_cloudfront_distribution" "website" {
     origin_id                = "S3-${aws_s3_bucket.website.bucket}"
   }
 
+  origin {
+    domain_name = aws_lb.main.dns_name
+    origin_id   = "ALB-${aws_lb.main.name}"
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
@@ -61,6 +72,50 @@ resource "aws_cloudfront_distribution" "website" {
     min_ttl     = 0
     default_ttl = 3600
     max_ttl     = 86400
+  }
+
+  # Cache behavior for API requests
+  ordered_cache_behavior {
+    path_pattern           = "/api/*"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "ALB-${aws_lb.main.name}"
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Origin", "Authorization"]
+      cookies {
+        forward = "all"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
+  # Cache behavior for WebSocket connections
+  ordered_cache_behavior {
+    path_pattern           = "/ws"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "ALB-${aws_lb.main.name}"
+    compress               = false
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["*"]
+      cookies {
+        forward = "all"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
   }
 
   # Cache behavior for WebAssembly files

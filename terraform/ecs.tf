@@ -67,6 +67,10 @@ resource "aws_ecs_task_definition" "app" {
         {
           name  = "LEADERBOARD_TABLE"
           value = aws_dynamodb_table.leaderboard.name
+        },
+        {
+          name  = "CORS_ORIGINS"
+          value = "https://${aws_cloudfront_distribution.website.domain_name},http://${aws_lb.main.dns_name}"
         }
       ]
 

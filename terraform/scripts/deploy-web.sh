@@ -7,11 +7,11 @@ set -e
 # Change to terraform directory to get outputs
 cd "$(dirname "$0")/.."
 
-# Get bucket name, CloudFront distribution ID, and ALB URL from Terraform outputs
+# Get bucket name, CloudFront distribution ID, and CloudFront URL from Terraform outputs
 BUCKET_NAME=$(terraform output -raw website_bucket_name)
 DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
-ALB_DNS_NAME=$(terraform output -raw alb_dns_name)
-SERVER_URL="http://${ALB_DNS_NAME}"
+CLOUDFRONT_URL=$(terraform output -raw website_url)
+SERVER_URL="${CLOUDFRONT_URL}"
 
 echo "🚀 Deploying WebAssembly client..."
 echo "Bucket: $BUCKET_NAME"

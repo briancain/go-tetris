@@ -39,7 +39,7 @@
         };
 
         // Fallback to localhost if template not replaced (local development)
-        if (window.TETRIS_CONFIG.serverURL === "{{SERVER_URL}}") {
+        if (window.TETRIS_CONFIG.serverURL === "{{" + "SERVER_URL" + "}}") {
             window.TETRIS_CONFIG.serverURL = "http://localhost:8080";
         }
     </script>

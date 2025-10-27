@@ -89,7 +89,11 @@ func (mc *MultiplayerClient) Connect() error {
 		return err
 	}
 
-	u.Scheme = "ws"
+	if u.Scheme == "https" {
+		u.Scheme = "wss"
+	} else {
+		u.Scheme = "ws"
+	}
 	u.Path = "/ws"
 	u.RawQuery = "token=" + mc.sessionToken
 

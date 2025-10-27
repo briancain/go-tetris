@@ -98,7 +98,7 @@ func NewGame() *Game {
 		PieceGen:          NewPieceGenerator(),    // Initialize the 7-bag generator
 		BackToBack:        false,
 		LastClearWasTSpin: false,
-		ServerURL:         "http://localhost:8080", // Default server URL
+		ServerURL:         getServerURL(), // Get server URL based on environment
 	}
 
 	// Initialize pieces
@@ -985,7 +985,7 @@ func (g *Game) StartMultiplayerConnection() {
 	g.ConnectionStatus = "Connecting to server..."
 
 	// Enable multiplayer mode
-	err := g.EnableMultiplayer("http://localhost:8080")
+	err := g.EnableMultiplayer(g.ServerURL)
 	if err != nil {
 		log.Printf("Multiplayer: Failed to enable multiplayer: %v", err)
 		g.ConnectionStatus = "Connection error occurred"

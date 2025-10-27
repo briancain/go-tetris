@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Port      string
-	RedisURL  string
-	ServerURL string
+	Port        string
+	RedisURL    string
+	ServerURL   string
+	CORSOrigins string
 }
 
 func Load() (*Config, error) {
@@ -18,23 +19,26 @@ func Load() (*Config, error) {
 }
 
 func LoadWithFlags(parseFlags bool) (*Config, error) {
-	var port, redisURL, serverURL string
+	var port, redisURL, serverURL, corsOrigins string
 
 	if parseFlags && !flag.Parsed() {
 		portFlag := flag.String("port", "", "Server port")
 		redisURLFlag := flag.String("redis-url", "", "Redis connection URL")
 		serverURLFlag := flag.String("server-url", "", "Public server URL")
+		corsOriginsFlag := flag.String("cors-origins", "", "Comma-separated list of allowed CORS origins")
 		flag.Parse()
 
 		port = *portFlag
 		redisURL = *redisURLFlag
 		serverURL = *serverURLFlag
+		corsOrigins = *corsOriginsFlag
 	}
 
 	cfg := &Config{
-		Port:      getValue(port, "PORT", "8080"),
-		RedisURL:  getValue(redisURL, "REDIS_URL", ""),
-		ServerURL: getValue(serverURL, "SERVER_URL", "http://localhost:8080"),
+		Port:        getValue(port, "PORT", "8080"),
+		RedisURL:    getValue(redisURL, "REDIS_URL", ""),
+		ServerURL:   getValue(serverURL, "SERVER_URL", "http://localhost:8080"),
+		CORSOrigins: getValue(corsOrigins, "CORS_ORIGINS", "http://localhost:3000,http://localhost:8080"),
 	}
 
 	if err := cfg.validate(); err != nil {

@@ -72,6 +72,8 @@ func main() {
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
+	corsOrigins := middleware.ParseCORSOrigins(cfg.CORSOrigins)
+	corsMiddleware := middleware.CORS(corsOrigins)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -80,15 +82,15 @@ func main() {
 	wsHandler := handlers.NewWebSocketHandler(wsManager, authService, gameManager)
 	healthHandler := handlers.NewHealthHandler(wsManager, storageHealth)
 
-	// Setup routes with logging middleware
-	http.HandleFunc("/api/auth/login", middleware.RequestLogging(authHandler.Login))
-	http.HandleFunc("/api/auth/logout", middleware.RequestLogging(authMiddleware.RequireAuth(authHandler.Logout)))
+	// Setup routes with logging and CORS middleware
+	http.HandleFunc("/api/auth/login", corsMiddleware(middleware.RequestLogging(authHandler.Login)))
+	http.HandleFunc("/api/auth/logout", corsMiddleware(middleware.RequestLogging(authMiddleware.RequireAuth(authHandler.Logout))))
 
-	http.HandleFunc("/api/matchmaking/queue", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.JoinQueue)))
-	http.HandleFunc("/api/matchmaking/queue/leave", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.LeaveQueue)))
-	http.HandleFunc("/api/matchmaking/status", middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.GetQueueStatus)))
+	http.HandleFunc("/api/matchmaking/queue", corsMiddleware(middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.JoinQueue))))
+	http.HandleFunc("/api/matchmaking/queue/leave", corsMiddleware(middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.LeaveQueue))))
+	http.HandleFunc("/api/matchmaking/status", corsMiddleware(middleware.RequestLogging(authMiddleware.RequireAuth(matchmakingHandler.GetQueueStatus))))
 
-	http.HandleFunc("/api/leaderboard", middleware.RequestLogging(leaderboardHandler.GetLeaderboard))
+	http.HandleFunc("/api/leaderboard", corsMiddleware(middleware.RequestLogging(leaderboardHandler.GetLeaderboard)))
 
 	http.HandleFunc("/ws", wsHandler.HandleWebSocket)
 
