@@ -59,3 +59,45 @@ output "ecs_task_role_arn" {
   description = "ECS task role ARN"
   value       = aws_iam_role.ecs_task.arn
 }
+
+# Storage outputs
+output "redis_endpoint" {
+  description = "Redis cluster endpoint"
+  value       = aws_elasticache_cluster.redis.cache_nodes[0].address
+}
+
+output "redis_port" {
+  description = "Redis cluster port"
+  value       = aws_elasticache_cluster.redis.cache_nodes[0].port
+}
+
+output "dynamodb_players_table" {
+  description = "DynamoDB Players table name"
+  value       = aws_dynamodb_table.players.name
+}
+
+output "dynamodb_games_table" {
+  description = "DynamoDB Games table name"
+  value       = aws_dynamodb_table.games.name
+}
+
+output "dynamodb_leaderboard_table" {
+  description = "DynamoDB Leaderboard table name"
+  value       = aws_dynamodb_table.leaderboard.name
+}
+
+# ALB outputs
+output "alb_dns_name" {
+  description = "ALB DNS name"
+  value       = aws_lb.main.dns_name
+}
+
+output "alb_zone_id" {
+  description = "ALB hosted zone ID"
+  value       = aws_lb.main.zone_id
+}
+
+output "alb_target_group_arn" {
+  description = "ALB target group ARN for ECS service"
+  value       = aws_lb_target_group.ecs.arn
+}
