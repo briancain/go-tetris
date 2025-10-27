@@ -31,7 +31,19 @@
     <div id="gameContainer">
         <canvas id="canvas"></canvas>
     </div>
-    
+
+    <script>
+        // Configuration - replaced at deployment time
+        window.TETRIS_CONFIG = {
+            serverURL: "{{SERVER_URL}}"
+        };
+
+        // Fallback to localhost if template not replaced (local development)
+        if (window.TETRIS_CONFIG.serverURL === "{{SERVER_URL}}") {
+            window.TETRIS_CONFIG.serverURL = "http://localhost:8080";
+        }
+    </script>
+
     <script src="wasm_exec.js"></script>
     <script>
         const go = new Go();
