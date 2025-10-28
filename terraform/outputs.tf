@@ -86,6 +86,32 @@ output "dynamodb_leaderboard_table" {
   value       = aws_dynamodb_table.leaderboard.name
 }
 
+# SSL/Domain outputs
+output "domain_name" {
+  description = "Domain name for SSL certificate"
+  value       = var.domain_name
+}
+
+output "ssl_enabled" {
+  description = "Whether SSL is enabled"
+  value       = var.enable_ssl
+}
+
+output "certificate_arn" {
+  description = "ACM certificate ARN (when SSL enabled)"
+  value       = var.enable_ssl && var.domain_name != "" ? aws_acm_certificate.main[0].arn : null
+}
+
+output "api_url" {
+  description = "API base URL (HTTP or HTTPS based on SSL configuration)"
+  value       = var.enable_ssl && var.domain_name != "" ? "https://${var.domain_name}" : "http://${aws_lb.main.dns_name}"
+}
+
+output "websocket_url" {
+  description = "WebSocket URL (WS or WSS based on SSL configuration)"
+  value       = var.enable_ssl && var.domain_name != "" ? "wss://${var.domain_name}/ws" : "ws://${aws_lb.main.dns_name}/ws"
+}
+
 # ALB outputs
 output "alb_dns_name" {
   description = "ALB DNS name"

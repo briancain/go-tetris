@@ -1,0 +1,14 @@
+# SSL Configuration Example
+# Copy this to ssl-config.tfvars and update with your domain
+
+# Enable SSL/HTTPS support
+enable_ssl = true
+
+# Your domain name (requires existing Route 53 hosted zone)
+# Examples:
+# - api.tetris.briancq.people.aws.dev (AWS employee subdomain)
+# - api.tetris.yourdomain.com (custom domain)
+domain_name = "api.tetris.example.com"
+
+# Note: The hosted zone for the parent domain must already exist in Route 53
+# For "api.tetris.example.com", you need a hosted zone for "tetris.example.com" or "example.com"

@@ -38,11 +38,38 @@ resource "aws_lb_target_group" "ecs" {
   }
 }
 
-# HTTP Listener (for development - no HTTPS redirect)
+# HTTP Listener
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = "80"
   protocol          = "HTTP"
+
+  # Redirect to HTTPS if SSL is enabled, otherwise forward to target group
+  default_action {
+    type = var.enable_ssl ? "redirect" : "forward"
+
+    dynamic "redirect" {
+      for_each = var.enable_ssl ? [1] : []
+      content {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+
+    target_group_arn = var.enable_ssl ? null : aws_lb_target_group.ecs.arn
+  }
+}
+
+# HTTPS Listener (only created when SSL is enabled)
+resource "aws_lb_listener" "https" {
+  count = var.enable_ssl && var.domain_name != "" ? 1 : 0
+
+  load_balancer_arn = aws_lb.main.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = aws_acm_certificate_validation.main[0].certificate_arn
 
   default_action {
     type             = "forward"
